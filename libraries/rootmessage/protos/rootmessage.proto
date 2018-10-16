@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message RootMessage {
+  string message_type_hash = 1;
+  bytes unencrypted_message = 2;
+}

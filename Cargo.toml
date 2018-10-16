@@ -1,0 +1,12 @@
+[package]
+name = "protocolhandler"
+version = "0.1.0"
+authors = ["James Prince <34577138+zutils@users.noreply.github.com>"]
+
+[dependencies]
+failure = "0.1.2"
+signals = { path = "../signals" }
+base64 = "0.9.3"
+libloading = "0.5"
+notify = "4.0.6"
+glob = "0.2"

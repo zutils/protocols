@@ -1,0 +1,22 @@
+[package]
+name = "test"
+version = "0.1.0"
+build = "build.rs"
+
+[dependencies]
+protobuf = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
+failure = "*"
+
+[build-dependencies]
+builder = { path = "../../builder" }
+failure = "*"
+
+[lib]
+crate-type = ["dylib"]
+
+[features]
+with-serde = ["protobuf/with-serde"]
+default = ["with-serde"]
