@@ -1,7 +1,7 @@
 [package]
-name = "test"
+name = "root-message"
 version = "0.1.0"
-build = "build.rs"
+authors = ["James Prince <34577138+zutils@users.noreply.github.com>"]
 
 [dependencies]
 protobuf = "*"
@@ -11,12 +11,16 @@ serde_derive = "*"
 failure = "*"
 
 [build-dependencies]
-builder = { path = "../../builder" }
+protobuf = "*"
 failure = "*"
-
-[lib]
-crate-type = ["dylib"]
+protobuf-codegen-pure = "*"
+protobuf-codegen = "*"
+ipfs-api = "0.5.0-alpha2"
+hyper = "*"
 
 [features]
 with-serde = ["protobuf/with-serde"]
 default = ["with-serde"]
+
+[lib]
+crate-type = ["dylib"]

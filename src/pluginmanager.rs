@@ -1,9 +1,8 @@
-/// Libraries are loaded from the hard drive. There are known "safe" libraries that are compiled with this crate.
-/// It is possible to load unsafe libraries
+//! Libraries are loaded from the hard drive. There are known "safe" libraries that are compiled with this crate.
+//! It is possible to load unsafe libraries
 
 extern crate notify;
 extern crate libloading as lib;
-extern crate base64;
 extern crate signals;
 extern crate glob;
 extern crate failure;
@@ -17,11 +16,9 @@ use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 
 use self::failure::{Error};
-
 use self::notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
-use self::signals::{Signal, Emitter};
+use self::signals::{Signal, Emitter, Am};
 
-use utils::Am;
 
 pub struct Plugin {
     library: lib::Library,
@@ -68,35 +65,29 @@ impl Plugin {
 
 pub struct PluginManager {
     map: Am<HashMap<String, Plugin>>,
-    watch_path: &'static str,
 }
 
 impl PluginManager {
-    pub fn new(watch_path: &'static str) -> Self {
-        let manager = PluginManager {
+    pub fn new() -> Self {
+        PluginManager {
             map: Arc::new(Mutex::new(HashMap::new())),
-            watch_path,
-        };
-
-        if let Err(e) = manager.load_all_plugins() {
-            println!("{:?}", e);
         }
-        manager
     }
 
+    /// If we know the schema hash, we can get a default message of the hash type.
     pub fn get_default_message(&self, hash: &str) -> Result<String, Error> {
         let hash_map = self.map.lock().unwrap();
         hash_map.get(hash).ok_or(format_err!("Hash {} does not exist!", hash))?.get_default_message()
     }
 
     /// Get the hashed library from the map, and call its "handle" function
-    pub fn handle(&self, hash: &str, base64: &str) -> Result<(), Error> {
+    pub fn handle(&self, hash: &str, data: &[u8]) -> Result<(), Error> {
         let hash_map = self.map.lock().unwrap();
-        hash_map.get(hash).ok_or(format_err!("Hash {} does not exist!", hash))?.handle(&base64::decode(base64)?)
+        hash_map.get(hash).ok_or(format_err!("Hash {} does not exist!", hash))?.handle(data)
     }
 
-    // TODO: SUPPORT MORE THAN JUST WINDOWS DLL FILES!!!
-    fn load_all_plugins(&self) -> Result<(), Error> {
+    /// TODO: SUPPORT MORE THAN JUST WINDOWS DLL FILES!!!
+    pub fn load_all_plugins(&self) -> Result<(), Error> {
         let hash_map = self.map.clone();
         let signal = Signal::new_arc_mutex(move |path: &OsString| PluginManager::load_plugin(hash_map.clone(), path));
 
@@ -129,6 +120,11 @@ impl PluginManager {
         }
     }
 
+    /// Load a single plugin given a filename
+    pub fn load_single_plugin(&self, filename: &str) -> Result<(), Error> {
+        PluginManager::load_plugin(self.map.clone(), &OsString::from(filename))
+    }
+
     /// Loads a library so that we may use its functions
     fn load_plugin(hash_map: Am<HashMap<String,Plugin>>, filename: &OsString) -> Result<(), Error> {
         println!("Loading {:?}", filename);
@@ -144,14 +140,13 @@ impl PluginManager {
         Ok(())
     }
 
-    /// Continuously load from ./data/standards
-    pub fn continuously_watch_for_new_plugins(&self) {
+    /// Continuously load from plugin directories
+    pub fn continuously_watch_for_new_plugins(&self, watch_path: &'static str) {
         let hash_map = self.map.clone();
         let signal = Signal::new_arc_mutex(move |path: &OsString| PluginManager::load_plugin(hash_map.clone(), path));
 
-        let path = self.watch_path.to_string();
         thread::spawn(move || {           
-            if let Err(e) = PluginManager::blocking_watch_directory(&*&path, signal ){
+            if let Err(e) = PluginManager::blocking_watch_directory(watch_path, signal ){
                 println!("{:?}", e);
             }
         });

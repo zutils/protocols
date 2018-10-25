@@ -4,13 +4,13 @@ extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate failure;
 
-pub mod __LIB_FILE_BASE_NAME__;
-use __LIB_FILE_BASE_NAME__::__STRUCTURE_NAME__ as TargetStructure;
+pub mod rootmessage;
+use rootmessage::RootMessage as TargetStructure;
 use failure::Error;
 
 #[no_mangle]
 pub extern fn get_name() -> String {
-    return "__STRUCTURE_NAME__".to_string();
+    return "Rootmessage".to_string();
 }
 
 #[no_mangle]
@@ -30,5 +30,5 @@ pub extern fn get_default_message() -> Result<String, Error> {
 
 #[no_mangle]
 pub extern fn get_hash() -> String{
-    return "__HASHCODE__".to_string();
+    return include_str!("../hash.txt").to_string();
 }

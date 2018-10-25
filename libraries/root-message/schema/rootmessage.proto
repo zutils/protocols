@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message RootMessage {
+  string schema_location = 1;
+  bytes unencrypted_message = 2;
+}

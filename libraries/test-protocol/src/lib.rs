@@ -4,13 +4,13 @@ extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate failure;
 
-pub mod person;
-use person::Person as TargetStructure;
+pub mod test;
+use test::Test as TargetStructure;
 use failure::Error;
 
 #[no_mangle]
 pub extern fn get_name() -> String {
-    return "Person".to_string();
+    return "Test".to_string();
 }
 
 #[no_mangle]
@@ -30,5 +30,5 @@ pub extern fn get_default_message() -> Result<String, Error> {
 
 #[no_mangle]
 pub extern fn get_hash() -> String{
-    return "QmX5c8CJdPwa3rVKbkq9vAZcKrLR1JuE9WXu9Yo5AEiaM9".to_string();
+    return include_str!("../hash.txt").to_string();
 }

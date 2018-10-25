@@ -1,6 +1,6 @@
 /target
 **/*.rs.bk
-libraries/person/target
-libraries/rootmessage/target
+libraries/test-protocol/target
+libraries/root-message/target
 Cargo.lock
 builder/target
