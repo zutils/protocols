@@ -1,7 +1,7 @@
 //! # What is it?
 //! The protocols crate is native rust library to make it easy to send messages between systems.  
 //! 
-//! At the moment, the protocols library is not ready for commercial use, and any included protocols should not be considered standard until a system of upgradability has been determined. 
+//! The purpose of this crate at the moment is to let the community know what work is being done.  At the moment, the protocols library is not ready for commercial use, and any included protocols should not be considered standard until a system of upgradability has been determined. 
 //! 
 //! Check out the examples folder in the repository for basic usage.
 //! 
@@ -39,42 +39,7 @@
 //! [dependencies]
 //! plugins = "*"
 //! ```
-//! 
-//! # Example
-//! ```
-//! extern crate protocols;
-//! extern crate failure;
-//! #[macro_use] extern crate serde_json;
-//! extern crate base64;
-//! 
-//! pub mod protocols;
-//! use protocols::PluginManager;
-//! 
-//! fn main() -> Result<(), failure::Error> {
-//!     // Initialize manager
-//!     let manager = PluginManager::new();
-//!     manager.load_all_plugins()?;
-//!     manager.continuously_watch_for_new_plugins();
-//! 
-//!     // Note: base64_data would normally come from some connection
-//!     let data = r#"{  "name": "John Doe",
-//!                      "data": "Hello World", }";
-//!         
-//! 
-//!     // If you change the protocol and recompile, hash.txt will change.
-//!     let root_message_hash = include_str!("../libraries/root-message/hash.txt").to_string();
-//!     manager.handle(&root_message_hash, data)?;
-//! 
-//!                           
-//!     // To send a message, it is possible to do this:
-//!     let test_protocol_hash = include_str!("../libraries/root-message/hash.txt");
-//!     let data = manager.get_default_message(test_protocol_hash)?;
-//!     println!("This is the data you want to send: {:?}", data);
-//! 
-//!     Ok(())
-//! }
-//! 
-//! ```
+
 
 #[macro_use] extern crate failure;
 
