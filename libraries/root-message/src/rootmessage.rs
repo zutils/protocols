@@ -25,7 +25,7 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct RootMessage {
     // message fields
-    pub message_type_hash: ::std::string::String,
+    pub schema_location: ::std::string::String,
     pub unencrypted_message: ::std::vec::Vec<u8>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -39,30 +39,30 @@ impl RootMessage {
         ::std::default::Default::default()
     }
 
-    // string message_type_hash = 1;
+    // string schema_location = 1;
 
-    pub fn clear_message_type_hash(&mut self) {
-        self.message_type_hash.clear();
+    pub fn clear_schema_location(&mut self) {
+        self.schema_location.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_message_type_hash(&mut self, v: ::std::string::String) {
-        self.message_type_hash = v;
+    pub fn set_schema_location(&mut self, v: ::std::string::String) {
+        self.schema_location = v;
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_message_type_hash(&mut self) -> &mut ::std::string::String {
-        &mut self.message_type_hash
+    pub fn mut_schema_location(&mut self) -> &mut ::std::string::String {
+        &mut self.schema_location
     }
 
     // Take field
-    pub fn take_message_type_hash(&mut self) -> ::std::string::String {
-        ::std::mem::replace(&mut self.message_type_hash, ::std::string::String::new())
+    pub fn take_schema_location(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.schema_location, ::std::string::String::new())
     }
 
-    pub fn get_message_type_hash(&self) -> &str {
-        &self.message_type_hash
+    pub fn get_schema_location(&self) -> &str {
+        &self.schema_location
     }
 
     // bytes unencrypted_message = 2;
@@ -102,7 +102,7 @@ impl ::protobuf::Message for RootMessage {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
-                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.message_type_hash)?;
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.schema_location)?;
                 },
                 2 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.unencrypted_message)?;
@@ -119,8 +119,8 @@ impl ::protobuf::Message for RootMessage {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if !self.message_type_hash.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.message_type_hash);
+        if !self.schema_location.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.schema_location);
         }
         if !self.unencrypted_message.is_empty() {
             my_size += ::protobuf::rt::bytes_size(2, &self.unencrypted_message);
@@ -131,8 +131,8 @@ impl ::protobuf::Message for RootMessage {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
-        if !self.message_type_hash.is_empty() {
-            os.write_string(1, &self.message_type_hash)?;
+        if !self.schema_location.is_empty() {
+            os.write_string(1, &self.schema_location)?;
         }
         if !self.unencrypted_message.is_empty() {
             os.write_bytes(2, &self.unencrypted_message)?;
@@ -180,9 +180,9 @@ impl ::protobuf::Message for RootMessage {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
-                    "message_type_hash",
-                    |m: &RootMessage| { &m.message_type_hash },
-                    |m: &mut RootMessage| { &mut m.message_type_hash },
+                    "schema_location",
+                    |m: &RootMessage| { &m.schema_location },
+                    |m: &mut RootMessage| { &mut m.schema_location },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                     "unencrypted_message",
@@ -211,7 +211,7 @@ impl ::protobuf::Message for RootMessage {
 
 impl ::protobuf::Clear for RootMessage {
     fn clear(&mut self) {
-        self.clear_message_type_hash();
+        self.clear_schema_location();
         self.clear_unencrypted_message();
         self.unknown_fields.clear();
     }
@@ -230,9 +230,9 @@ impl ::protobuf::reflect::ProtobufValue for RootMessage {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x18schema/rootmessage.proto\x12\0\"M\n\x0bRootMessage\x12\x1d\n\x11me\
-    ssage_type_hash\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1f\n\x13unencrypted_m\
-    essage\x18\x02\x20\x01(\x0cB\x02\x18\0B\0b\x06proto3\
+    \n\x18schema/rootmessage.proto\x12\0\"K\n\x0bRootMessage\x12\x1b\n\x0fsc\
+    hema_location\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1f\n\x13unencrypted_mes\
+    sage\x18\x02\x20\x01(\x0cB\x02\x18\0B\0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

@@ -18,7 +18,7 @@ fn main() -> Result<(), Error> {
 	Ok(())
 }
 
-//! Build rust code from protobuffer. 
+/// Build rust code from protobuffer. 
 fn build_rust_code_from_protobuffer(proto_filename: &str) -> Result<(), Error> {
 	let mut customize = pb::Customize::default();
 	customize.serde_derive = Some(true);
@@ -35,8 +35,8 @@ fn build_rust_code_from_protobuffer(proto_filename: &str) -> Result<(), Error> {
 	Ok(())
 }
 
-//! Adds the file to IPFS so that 1) we can get it's hash and 2) That any message expected to receive this hash knows the schema.
-//! In parent program, lib.rs loads in the hash file at compile time so that it knows the hash.
+/// Adds the file to IPFS so that 1) we can get it's hash and 2) That any message expected to receive this hash knows the schema.
+/// In parent program, lib.rs loads in the hash file at compile time so that it knows the hash.
 fn add_file_and_write_ipfs_hash(proto_filename: &str) -> Result<(), Error> {
 	use std::fs::File;	
 	let client = IpfsClient::default();
