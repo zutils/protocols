@@ -40,7 +40,5 @@
 //! plugins = "*"
 //! ```
 
-
-#[macro_use] extern crate failure;
-
 pub mod pluginmanager;
+pub mod buildfunctions;

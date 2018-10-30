@@ -1,15 +1,14 @@
+#[macro_use] extern crate serde_derive;
 extern crate protobuf;
 extern crate serde_json;
 extern crate serde;
-#[macro_use] extern crate serde_derive;
 extern crate failure;
+extern crate protocols;
 
 pub mod test;
-use test::Test as TargetStructure;
+use test::Test;
 use failure::Error;
-
-/// String is the hash of another protocol. The Vec is the actual data.
-pub struct SubmessageData(String, Vec<u8>);
+use protocols::pluginmanager::PluginManager;
 
 #[no_mangle]
 pub extern fn get_name() -> String {
@@ -17,10 +16,10 @@ pub extern fn get_name() -> String {
 }
 
 #[no_mangle]
-pub extern fn handle(data: &[u8]) -> Result<Vec<SubmessageData>, Error> {
+pub extern fn handle(manager: &PluginManager, data: &[u8]) -> Result<(), Error> {
     let string: String = data.iter().map(|u: &u8| *u as char).collect();
     println!("Handling: {:?}", data);
-    let structure: TargetStructure = serde_json::from_str(&string)?;
+    let structure: Test = serde_json::from_str(&string)?;
     println!("Received message: {:?}", structure);
     
     Ok(Vec::new())
@@ -29,11 +28,11 @@ pub extern fn handle(data: &[u8]) -> Result<Vec<SubmessageData>, Error> {
 #[no_mangle]
 pub extern fn generate_message(template_name: &str) -> Result<String, Error> {
     // For now, just generate a default message
-    let structure = TargetStructure::new();
+    let structure = Test::new();
     Ok(serde_json::to_string(&structure)?)
 }
 
 #[no_mangle]
-pub extern fn get_hash() -> String{
-    return include_str!("../hash.txt").to_string();
+pub extern fn get_schema_url() -> String{
+    return include_str!("../schema_url.txt").to_string();
 }

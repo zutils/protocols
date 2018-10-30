@@ -9,14 +9,11 @@ serde = "*"
 serde_json = "*"
 serde_derive = "*"
 failure = "*"
+protocols = { path = "../../" }
 
 [build-dependencies]
-protobuf = "*"
-failure = "*"
-protobuf-codegen-pure = "*"
-protobuf-codegen = "*"
-ipfs-api = "0.5.0-alpha2"
-hyper = "*"
+protocols = { path = "../" }
+failure = "0.1.2"
 
 [features]
 with-serde = ["protobuf/with-serde"]

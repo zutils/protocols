@@ -16,7 +16,7 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 
-use self::failure::{Error};
+use self::failure::{Error, format_err};
 use self::notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
 use self::signals::{Signal, Emitter, Am};
 
@@ -34,11 +34,6 @@ impl Deref for Plugin {
     }
 }
 
-// TODO: Possibly turn SubmessageData into Handleable trait.
-/// A Vec of SubmessageData is returned from plugins' handle function for all un-handled submessages.
-/// TODO: Share this with individual plugins as a return type.
-pub struct SubmessageData(String, Vec<u8>);
-
 impl Plugin {
 
     /// Get a nice name for simple display. This function may be going away.
@@ -49,18 +44,18 @@ impl Plugin {
         }
     }
 
-    /// Take data. The returned data is submessage data that should be handled.
-    pub fn handle(&self, data: &[u8]) -> Result<Vec<SubmessageData>, Error> {
+    /// Handle all messages. Pass in PluginManager so that we can handle further submessage data
+    pub fn handle(&self, manager: &PluginManager, data: &[u8]) -> Result<(), Error> {
         println!("Handling data...");
         unsafe {
-            let func: lib::Symbol<unsafe extern fn(&[u8]) -> Result<Vec<SubmessageData>, Error>> = self.library.get(b"handle")?;
-            func(data)
+            let func: lib::Symbol<unsafe extern fn(&PluginManager, &[u8]) -> Result<(), Error>> = self.library.get(b"handle")?;
+            func(manager, data)
         }
     }
 
     /// This function may be renamed to get_schema_url
     /// It exists to reference the schema that was used to create the library.
-    pub fn get_hash(&self) -> Result<String, Error> {
+    pub fn get_schema_url(&self) -> Result<String, Error> {
         unsafe {
             let func: lib::Symbol<unsafe extern fn() -> String> = self.library.get(b"get_hash")?;
             Ok(func())
@@ -103,33 +98,31 @@ impl PluginManager {
     }
 
     /// Get the hashed library from the map, and call its exported "handle" function. 
-    /// Handle any unhandled submessages the handle(...) function wants us to.
     pub fn handle_msg_and_submsgs(&self, hash: &str, data: &[u8]) -> Result<(), Error> {
-        let unhandled_submsgs = self.handle_msg(hash, data)?;
-        
-        for SubmessageData(submsg_hash, submsg_data) in unhandled_submsgs.iter() {
-            if let Err(e) = self.handle_msg_and_submsgs(submsg_hash, submsg_data) {
-                println!("Cannot handle submessage {:?}", e);
-            }
-        }
-
-        Ok(())
-    }
-
-    fn handle_msg(&self, hash: &str, data: &[u8]) -> Result<Vec<SubmessageData>, Error> {
         println!("Attempting to handle message type: {} and data '{}'", hash, String::from_utf8(data.to_vec())?);
 
         let hash_map = self.map.lock().unwrap();
         let plugin = hash_map.get(hash).ok_or(format_err!("Hash {} does not exist!", hash))?;
-        plugin.handle(data)
+        plugin.handle(self, data)
+    }
+
+    pub fn handle_msg_in_thread(&self, hash: &str, data: Vec<u8>) {
+        let hash_map = self.map.clone();
+        let hash = hash.to_string();
+        thread::spawn(move || {
+            let hash_map = hash_map.lock().unwrap();
+            let plugin = hash_map.get(&hash).ok_or(format_err!("Hash {} does not exist!", hash))?;
+            plugin.handle(self, &data)
+        });
     }
 
     /// TODO: SUPPORT MORE THAN JUST WINDOWS DLL FILES!!!
-    pub fn load_all_plugins(&self) -> Result<(), Error> {
+    /// Default SHOULD be "./libraries/**/target/debug/*.dll" if libraries exist there.
+    pub fn load_all_plugins(&self, path_glob: &str) -> Result<(), Error> {
         let hash_map = self.map.clone();
         let signal = Signal::new_arc_mutex(move |path: &OsString| PluginManager::load_plugin(hash_map.clone(), path));
 
-        glob::glob("./libraries/**/target/debug/*.dll")?.filter_map(Result::ok).for_each(|path: PathBuf| {
+        glob::glob(path_glob)?.filter_map(Result::ok).for_each(|path: PathBuf| {
             signal.lock().unwrap().emit(path.into_os_string());
         });
 
@@ -172,7 +165,7 @@ impl PluginManager {
             library
         };
 
-        let hash = plugin.get_hash()?.to_string();
+        let hash = plugin.get_schema_url()?.to_string();
         println!("Loading plugin {:?} with hash {:?}", filename, hash);
         hash_map.lock().unwrap().insert(hash, plugin);
         Ok(())

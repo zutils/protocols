@@ -17,7 +17,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Handle message received.  
     // The submessage of the root-message will be a test-protocol message. If it is loaded in the manager, it will be handled.
-    let root_message_hash = include_str!("../libraries/root-message/hash.txt").to_string();
+    let root_message_hash = include_str!("../libraries/root-message/schema_url.txt").to_string();
     manager.handle_msg_and_submsgs(&root_message_hash, &buf[0.._byte_count])?;
 
     Ok(())

@@ -1,6 +1,6 @@
 extern crate failure;
 extern crate protocols;
-#[macro_use] extern crate serde_json;
+extern crate serde_json;
 
 use std::net::UdpSocket;
 use protocols::pluginmanager::PluginManager;
@@ -12,14 +12,14 @@ fn main() -> Result<(), failure::Error> {
     manager.load_single_plugin("./libraries/root-message/target/debug/root_message.dll")?;
 
     // Generate message
-    let root_protocol_hash = include_str!("../libraries/root-message/hash.txt");
-    let test_protocol_hash = include_str!("../libraries/test-protocol/hash.txt");
+    let root_protocol_hash = include_str!("../libraries/root-message/schema_url.txt");
+    let test_protocol_hash = include_str!("../libraries/test-protocol/schema_url.txt");
 
     // Currently, sending messages is long, tedious, and slow. This WILL change. Here are some possible changes:
     // Possible solution 1: (slow... lots of copying)
     //   let mut test_data = manager.generage_message_with_data(&[("name", "Test Name"),
     //                                                            ("data", "Test Data")]);
-    //   let mut root_data = manager.generage_message_with_data(&[("schema_location",test_protocol_hash), 
+    //   let mut root_data = manager.generage_message_with_data(&[("schema_url",test_protocol_hash), 
     //                                                            ("unencrypted_message",test_data)]);
     //   // root_data would then be able to be sent.
     //
@@ -42,7 +42,7 @@ fn main() -> Result<(), failure::Error> {
     println!("Constructing message...");
     test_data["name"] = json!("Test Name");
     test_data["data"] = json!("Test Data");
-    root_data["schema_location"] = json!(test_protocol_hash); // Add the hash of the sub-protocol.
+    root_data["schema_url"] = json!(test_protocol_hash); // Add the hash of the sub-protocol.
     root_data["unencrypted_message"] = json!(test_data.to_string().as_bytes());     // Set the data to be that of the sub-protocol.
 
     // Send to localhost. Use the receiver binary to receive this data.

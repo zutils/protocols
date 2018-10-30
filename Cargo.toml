@@ -17,6 +17,12 @@ notify = "4.0.6"
 glob = "0.2"
 serde = "1.0.80"
 serde_json = "1.0.32"
+protobuf-codegen = "2.1.2"
+protobuf-codegen-pure = "2.1.2"
+ipfs-api = "0.5.0-alpha2"
+hyper = "0.12.13"
+toml = "0.4.8"
+toml-query = "0.7.0"
 
 [badges]
 travis-ci = { repository = "zutils/protocols" }
