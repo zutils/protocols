@@ -40,5 +40,5 @@
 //! plugins = "*"
 //! ```
 
-pub mod pluginmanager;
+pub mod pluginhandler;
 pub mod buildfunctions;

@@ -23,6 +23,7 @@ ipfs-api = "0.5.0-alpha2"
 hyper = "0.12.13"
 toml = "0.4.8"
 toml-query = "0.7.0"
+rand = "*"
 
 [badges]
 travis-ci = { repository = "zutils/protocols" }

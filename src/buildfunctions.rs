@@ -26,8 +26,8 @@ pub fn build_rust_code_from_protobuffer(proto_filename: &str) -> Result<(), Erro
 	Ok(())
 }
 
-/// Adds the file to IPFS so that 1) we can get it's hash and 2) That any message expected to receive this hash knows the schema.
-/// In parent program, lib.rs loads in the hash file at compile time so that it knows the hash.
+/// Adds the file to IPFS so that 1) we can get it's hash and 2) So that we can generate a schema url from that hash
+/// In parent program, lib.rs loads in the schema_url and description at compile time so that the library can use it.
 pub fn add_file_and_write_ipfs_hash(proto_filename: &str) -> Result<(), Error> {
 	use self::hyper::rt::Future;
 
@@ -38,8 +38,9 @@ pub fn add_file_and_write_ipfs_hash(proto_filename: &str) -> Result<(), Error> {
 	let file = File::open(proto_filename)?;
 	let req = client.add(file)
 					.map(move |result| { 
-                        println!("Writing {} to schema_url.txt", result.hash);
-                        write_to_file("./schema_url.txt", &result.hash).unwrap();
+						let schema_url = "https://ipfs.io/".to_string() + &result.hash;
+                        println!("Writing {} to schema_url.txt", schema_url);
+                        write_to_file("./schema_url.txt", &schema_url).unwrap();
 						write_to_file("./description.txt", &description).unwrap();
                     })
 					.map_err(|e| eprintln!("{}", e));

@@ -12,7 +12,7 @@ failure = "*"
 protocols = { path = "../../" }
 
 [build-dependencies]
-protocols = { path = "../" }
+protocols = { path = "../../" }
 failure = "0.1.2"
 
 [features]

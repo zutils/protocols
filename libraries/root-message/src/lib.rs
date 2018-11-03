@@ -1,14 +1,14 @@
+#[macro_use] extern crate serde_derive;
 extern crate protobuf;
 extern crate serde_json;
 extern crate serde;
-extern crate serde_derive;
 extern crate failure;
 extern crate protocols;
 
 pub mod rootmessage;
 use rootmessage::RootMessage;
 use failure::Error;
-use protocols::pluginmanager::{PluginManager};
+use protocols::pluginhandler::MessageInfo;
 
 #[no_mangle]
 pub extern fn get_name() -> String {
@@ -16,19 +16,13 @@ pub extern fn get_name() -> String {
 }
 
 #[no_mangle]
-pub extern fn handle(manager: &PluginManager, data: &[u8]) -> Result<(), Error> {
-    let string: String = data.iter().map(|u: &u8| *u as char).collect();
+pub extern fn handle(info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
+    let string: String = info.data.iter().map(|u: &u8| *u as char).collect();
     println!("Handling: {}", string);
     let structure: RootMessage = serde_json::from_str(&string)?;
     println!("Received message: {:?}", structure);
 
-    manager.handle_msg_and_submsgs(structure.get_schema_url(), structure.get_unencrypted_message());
-    handle_submessages(manager, structure.get_unencrypted_message());
-}
-
-// This may represent a problem if root-message recurses itself.
-fn handle_submessages(manager: &PluginManager, schema_url: &str, data: &[u8]) -> Result<(), Error> {
-    manager.handle_msg_and_submsgs(schema_url, data);
+    Ok(vec![create_submessage(structure, info)])
 }
 
 #[no_mangle]
@@ -52,3 +46,14 @@ pub extern fn get_non_standard_library_interface_functions() -> Vec<String> {
 }
 
 ///////// Non-Standard //////////
+
+fn create_submessage(root: RootMessage, info: MessageInfo) -> MessageInfo {
+    let schema_url = root.get_schema_url();
+    let unencrypted_message = root.get_unencrypted_message();
+
+    // Create history with 1 more element
+    let mut history = info.history;
+    history.push(schema_url.to_string());
+
+    MessageInfo::new(history, schema_url, unencrypted_message)
+}

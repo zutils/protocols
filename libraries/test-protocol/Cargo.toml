@@ -11,9 +11,10 @@ serde_derive = "*"
 failure = "*"
 protocols = { path = "../../" }
 
+
 [build-dependencies]
 failure = "0.1.2"
-protocols = { path = "../" }
+protocols = { path = "../../" }
 
 [features]
 with-serde = ["protobuf/with-serde"]

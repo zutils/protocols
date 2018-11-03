@@ -8,7 +8,7 @@ extern crate protocols;
 pub mod test;
 use test::Test;
 use failure::Error;
-use protocols::pluginmanager::PluginManager;
+use protocols::pluginhandler::MessageInfo;
 
 #[no_mangle]
 pub extern fn get_name() -> String {
@@ -16,9 +16,9 @@ pub extern fn get_name() -> String {
 }
 
 #[no_mangle]
-pub extern fn handle(manager: &PluginManager, data: &[u8]) -> Result<(), Error> {
-    let string: String = data.iter().map(|u: &u8| *u as char).collect();
-    println!("Handling: {:?}", data);
+pub extern fn handle(info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
+    let string: String = info.data.iter().map(|u: &u8| *u as char).collect();
+    println!("Handling: {:?}", string);
     let structure: Test = serde_json::from_str(&string)?;
     println!("Received message: {:?}", structure);
     
