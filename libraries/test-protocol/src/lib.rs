@@ -26,13 +26,22 @@ pub extern fn handle(info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
 }
 
 #[no_mangle]
-pub extern fn generate_message(template_name: &str) -> Result<String, Error> {
-    // For now, just generate a default message
-    let structure = Test::new();
-    Ok(serde_json::to_string(&structure)?)
-}
-
-#[no_mangle]
 pub extern fn get_schema_url() -> String{
     return include_str!("../schema_url.txt").to_string();
+}
+
+// This should be replaced with a way to query the RPC.
+#[no_mangle]
+pub extern fn get_nonstandard_library_interface_functions() -> Vec<&'static str> {
+    vec!["generate_test_message(name: &str, data: &str) -> Result<String, Error>"]
+}
+
+///////////Non-Standard////////////
+#[no_mangle]
+pub extern fn generate_test_message(name: &str, data: &str) -> Result<String, Error> {
+    // For now, just generate a default message
+    let mut structure = Test::new();
+    structure.set_name(name.to_string());
+    structure.set_data(data.to_string());
+    Ok(serde_json::to_string(&structure)?)
 }

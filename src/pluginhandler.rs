@@ -59,6 +59,9 @@ pub trait FFILibrary {
 
     /// We want the protocol library itself to be responsible for generation of its own messages
     fn generate_message(&self, template_name: &str) -> Result<String, Error>;
+
+    /// We will use this for plugins, but will return None on static plugins.MessageInfo
+    fn get_library(&self) -> Result<&lib::Library, Error>;
 }
 
 impl FFILibrary for DynamicLibrary {
@@ -93,19 +96,26 @@ impl FFILibrary for DynamicLibrary {
         println!("Plugin: Generating message {}...", template_name);
         unsafe {
             let func: lib::Symbol<unsafe extern fn(&str) -> Result<String, Error>> = 
-                        self.library.get(b"generate_message").expect("generate_message function not found in library!");;
+                        self.library.get(b"generate_message").expect("generate_message function not found in library!");
             func(template_name)
         }
     }
+
+    fn get_library(&self) -> Result<&lib::Library, Error> {
+        Ok(&self.library)
+    }
 }
 
+pub type FFILibraryHashMapValue = Am<FFILibrary+Send>;
+type FFILibraryHashMap = HashMap<String, FFILibraryHashMapValue>; 
+
 pub struct PluginHandler {
-    map: Am<HashMap<String, Box<FFILibrary + Send>>>,
+    map: Am<FFILibraryHashMap>,
 }
 
 /// When we use the plugin directly, dereference to the hashmap
 impl Deref for PluginHandler {
-    type Target = Am<HashMap<String, Box<FFILibrary + Send>>>;
+    type Target = Am<FFILibraryHashMap>;
 
     fn deref(&self) -> &Self::Target {
         &self.map
@@ -126,40 +136,31 @@ impl PluginHandler {
         }
     }
 
-    /// If we know the schema, we can get a default message if it's loaded.
-    pub fn get_default_json_message(&self, hash: &str) -> Result<serde_json::Value, Error> {
-        let default_msg = self.generate_message(hash, "")?; // No name is default.
-        println!("Default Msg: {:?}", default_msg);
-        Ok(serde_json::from_str(&default_msg)?)
+    pub fn get_plugin(&self, schema: &str) -> Result<FFILibraryHashMapValue, Error> {
+        let err = format_err!("Schema {} does not exist!", schema);
+        let map = self.map.lock().unwrap();
+        let plugin = map.get(schema).ok_or(err)?;
+        Ok(plugin.clone())
     }
 
-    /// Generate a string representation of the default message.
-    pub fn generate_message(&self, schema: &str, template_name: &str) -> Result<String, Error> {
-        let hash_map = self.lock().unwrap();
-        hash_map.get(schema).ok_or(format_err!("Schema {} does not exist!", schema))?.generate_message(template_name)
+    fn get_plugin_from_info(&self, info: &MessageInfo) -> Result<FFILibraryHashMapValue, Error> {
+        Ok(self.get_plugin(&info.schema_url)?)
     }
 
-    /// Get the hashed library from the map, and call its exported "handle" function. 
-    pub fn handle_msg_and_submsgs(&self, info: MessageInfo) {
+    /// Get the library from the map, and call its exported "handle" function. 
+    pub fn handle_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
         println!("Handle message {:?}", info);
         let self_clone = self.clone();
+        let plugin = self.get_plugin_from_info(&info)?;
+        let submsgs = plugin.lock().unwrap().handle(info)?;
         thread::spawn(move || {
-            // Upon return from msg_blocking, we have to handle the submessages.
-            println!("In new thread");
-            match self_clone.blocking_handle_message_info(info) { 
-                Ok(submessages) => for msg in submessages.into_iter() {
-                                        self_clone.handle_msg_and_submsgs(msg);
-                                    },
-                Err(e) => println!("{:?}", e),
+            for msg in submsgs.into_iter() {
+                if let Err(e) = self_clone.handle_msg_and_submsgs(msg) {
+                    println!("{:?}", e);
+                }
             }
         });
-    }
-
-    fn blocking_handle_message_info(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
-        println!("Attempting to handle message type: {} and data '{}'", info.schema_url, String::from_utf8(info.data.to_vec())?);
-        let hash_map = self.lock().unwrap();
-        let plugin = hash_map.get(&info.schema_url).ok_or(format_err!("Schema {} does not exist!", info.schema_url))?;
-        plugin.handle(info)
+        Ok(())
     }
 
     /// Take a path glob and load in all plugins in that glob
@@ -175,7 +176,7 @@ impl PluginHandler {
     }
 
     /// So that you can load different plugins while the application is running.
-    pub fn load_plugin(&self, path: &PathBuf) -> Result<(), Error> {
+    pub fn load_plugin(&self, path: &PathBuf) -> Result<String, Error> {
         let path = path.to_str().ok_or(format_err!("Cannot convert to string"))?;
         println!("Loading {}", path);
         let library = lib::Library::new(path)?;
@@ -186,8 +187,8 @@ impl PluginHandler {
 
         let schema = plugin.get_schema_url()?.to_string();
         println!("Loading plugin {:?} with schema {:?}", path, schema);
-        self.lock().unwrap().insert(schema, Box::new(plugin));
-        Ok(())
+        self.lock().unwrap().insert(schema.clone(), Arc::new(Mutex::new(plugin)));
+        Ok(schema)
     }
 
     /// Continuously load from plugin directories

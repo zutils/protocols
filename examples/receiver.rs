@@ -7,11 +7,12 @@ use protocols::pluginhandler::*;
 fn main() -> Result<(), failure::Error> {
     use std::path::PathBuf;
     use std::thread;
+    use std::time::Duration;
 
     // Initialize handler
     let handler = PluginHandler::new();
-    handler.load_plugin(&PathBuf::from("../../../libraries/test-protocol/target/debug/test_protocol.dll"))?;
-    handler.load_plugin(&PathBuf::from("../../../libraries/root-message/target/debug/root_message.dll"))?;
+    let _test_protocol_schema = handler.load_plugin(&PathBuf::from("../../../libraries/test-protocol/target/debug/test_protocol.dll"))?;
+    let root_protocol_schema = handler.load_plugin(&PathBuf::from("../../../libraries/root-message/target/debug/root_message.dll"))?;
 
     // Receive a message from the sender crate.
     let socket = UdpSocket::bind("127.0.0.1:23462")?; // I chose a random port #
@@ -21,12 +22,11 @@ fn main() -> Result<(), failure::Error> {
 
     // Handle message received.  
     // The submessage of the root-message will be a test-protocol message. If it is loaded in the handler, it will be handled.
-    let root_message_schema_url = include_str!("../libraries/root-message/schema_url.txt");
-    let msg = MessageInfo::new(Vec::new(), root_message_schema_url, &buf[0..byte_count]);
-    handler.handle_msg_and_submsgs(msg);
+    let msg = MessageInfo::new(Vec::new(), &root_protocol_schema, &buf[0..byte_count]);
+    handler.handle_msg_and_submsgs(msg)?;
 
     // handle_msg_and_submsgs(...) spawns a thread. If we do not sleep, the program will exit before thread handles the messages.
-    thread::sleep_ms(500);
+    thread::sleep(Duration::from_millis(500));
 
     Ok(())
 }
