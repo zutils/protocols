@@ -11,35 +11,23 @@ use rand::Rng;
 use failure::Error;
 
 // Future: Replace these with a macro of some sort.
-trait NonstandardFFIRootMessage {
-    fn generate_root_message(&self, schema_url: &str, data: &[u8]) -> Result<String, Error>;
-}
-
-impl NonstandardFFIRootMessage for FFILibraryHashMapValue {
-    fn generate_root_message(&self, schema_url: &str, data: &[u8]) -> Result<String, Error> {
-        println!("Nonstandard function: Generating root message for {}...", schema_url);
-        let plugin = self.lock().unwrap();
-        unsafe {
-            let func: lib::Symbol<unsafe extern fn(&str, &[u8]) -> Result<String, Error>> = 
-                        plugin.get_library()?.get(b"generate_root_message").expect("generate_message function not found in library!");
-            func(schema_url, data)
-        }
+fn generate_root_message(plugin: FFILibraryHashMapValue, schema_url: &str, data: &[u8]) -> Result<String, Error> {
+    println!("Nonstandard function: Generating root message for {}...", schema_url);
+    let plugin = plugin.lock().unwrap();
+    unsafe {
+        let func: lib::Symbol<unsafe extern fn(&str, &[u8]) -> Result<String, Error>> = 
+                    plugin.get_library()?.get(b"generate_root_message").expect("generate_message function not found in library!");
+        func(schema_url, data)
     }
 }
 
-trait NonstandardFFITest {
-    fn generate_test_message(&self, schema_url: &str, data: &str) -> Result<String, Error>;
-}
-
-impl NonstandardFFITest for FFILibraryHashMapValue {
-    fn generate_test_message(&self, name: &str, data: &str) -> Result<String, Error> {
-        println!("Nonstandard function: Generating test message {}...", name);
-        let plugin = self.lock().unwrap();
-        unsafe {
-            let func: lib::Symbol<unsafe extern fn(&str, &str) -> Result<String, Error>> = 
-                        plugin.get_library()?.get(b"generate_test_message").expect("generate_message function not found in library!");
-            func(name, data)
-        }
+fn generate_test_message(plugin: FFILibraryHashMapValue, name: &str, data: &str) -> Result<String, Error> {
+    println!("Nonstandard function: Generating test message {}...", name);
+    let plugin = plugin.lock().unwrap();
+    unsafe {
+        let func: lib::Symbol<unsafe extern fn(&str, &str) -> Result<String, Error>> = 
+                    plugin.get_library()?.get(b"generate_test_message").expect("generate_message function not found in library!");
+        func(name, data)
     }
 }
 
@@ -52,8 +40,10 @@ fn main() -> Result<(), Error> {
     let root_protocol_schema = handler.load_plugin(&PathBuf::from("../../../libraries/root-message/target/debug/root_message.dll"))?;
 
     // Calling non-standard functions for message generation
-    let test_data = handler.get_plugin(&test_protocol_schema)?.generate_test_message("Test Name", "Test Data")?;
-    let root_data = handler.get_plugin(&root_protocol_schema)?.generate_root_message(&test_protocol_schema, test_data.as_bytes())?;
+    let test_plugin = handler.get_plugin(&test_protocol_schema)?;
+    let root_plugin = handler.get_plugin(&root_protocol_schema)?;
+    let test_data = generate_test_message(test_plugin, "Test Name", "Test Data")?;
+    let root_data = generate_root_message(root_plugin, &test_protocol_schema, test_data.as_bytes())?;
     
     // Send to localhost. Use the receiver binary to receive this data.
     println!("Sending: {:?}", root_data);
