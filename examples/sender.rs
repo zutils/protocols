@@ -41,8 +41,10 @@ fn main() -> Result<(), Error> {
 
     // Calling non-standard functions for message generation
     let test_plugin = handler.get_plugin(&test_protocol_schema)?;
-    let root_plugin = handler.get_plugin(&root_protocol_schema)?;
     let test_data = generate_test_message(test_plugin, "Test Name", "Test Data")?;
+
+    // Calling non-standard function fo feeding the test data to the root message
+    let root_plugin = handler.get_plugin(&root_protocol_schema)?;
     let root_data = generate_root_message(root_plugin, &test_protocol_schema, test_data.as_bytes())?;
     
     // Send to localhost. Use the receiver binary to receive this data.
