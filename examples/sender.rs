@@ -11,7 +11,7 @@ use rand::Rng;
 use failure::Error;
 
 // Future: Replace these with a macro of some sort.
-fn generate_root_message(plugin: FFILibraryHashMapValue, schema_url: &str, data: &[u8]) -> Result<String, Error> {
+fn generate_root_message(plugin: &FFILibraryHashMapValue, schema_url: &str, data: &[u8]) -> Result<String, Error> {
     println!("Nonstandard function: Generating root message for {}...", schema_url);
     let plugin = plugin.lock().unwrap();
     unsafe {
@@ -21,7 +21,7 @@ fn generate_root_message(plugin: FFILibraryHashMapValue, schema_url: &str, data:
     }
 }
 
-fn generate_test_message(plugin: FFILibraryHashMapValue, name: &str, data: &str) -> Result<String, Error> {
+fn generate_test_message(plugin: &FFILibraryHashMapValue, name: &str, data: &str) -> Result<String, Error> {
     println!("Nonstandard function: Generating test message {}...", name);
     let plugin = plugin.lock().unwrap();
     unsafe {
@@ -36,16 +36,15 @@ fn main() -> Result<(), Error> {
 
     // Initialize plugin handler
     let handler = PluginHandler::new();
-    let test_protocol_schema = handler.load_plugin(&PathBuf::from("../../../libraries/test-protocol/target/debug/test_protocol.dll"))?;
-    let root_protocol_schema = handler.load_plugin(&PathBuf::from("../../../libraries/root-message/target/debug/root_message.dll"))?;
+    handler.load_plugin(&PathBuf::from("../../../libraries/test-protocol/target/debug/test_protocol.dll"))?;
+
+    let test_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
+    let _root_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/root.txt");
 
     // Calling non-standard functions for message generation
-    let test_plugin = handler.get_plugin(&test_protocol_schema)?;
-    let test_data = generate_test_message(test_plugin, "Test Name", "Test Data")?;
-
-    // Calling non-standard function fo feeding the test data to the root message
-    let root_plugin = handler.get_plugin(&root_protocol_schema)?;
-    let root_data = generate_root_message(root_plugin, &test_protocol_schema, test_data.as_bytes())?;
+    let plugin = handler.get_plugin(&test_protocol_schema)?; // We know this is the same plugin as the root protocol
+    let test_data = generate_test_message(&plugin, "Test Name", "Test Data")?;
+    let root_data = generate_root_message(&plugin, &test_protocol_schema, test_data.as_bytes())?;
     
     // Send to localhost. Use the receiver binary to receive this data.
     println!("Sending: {:?}", root_data);

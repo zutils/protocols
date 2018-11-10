@@ -230,9 +230,9 @@ impl ::protobuf::reflect::ProtobufValue for Test {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x11schema/test.proto\x12\0\"*\n\x04Test\x12\x10\n\x04name\x18\x01\x20\
-    \x01(\tB\x02\x18\0\x12\x10\n\x04data\x18\x02\x20\x01(\tB\x02\x18\0B\0b\
-    \x06proto3\
+    \n\x13./schema/test.proto\x12\0\"*\n\x04Test\x12\x10\n\x04name\x18\x01\
+    \x20\x01(\tB\x02\x18\0\x12\x10\n\x04data\x18\x02\x20\x01(\tB\x02\x18\0B\
+    \0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

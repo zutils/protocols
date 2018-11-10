@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-message RootMessage {
+message Root {
   string schema_url = 1;
   bytes unencrypted_message = 2;
 }

@@ -23,7 +23,7 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 
 #[derive(PartialEq,Clone,Default)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
-pub struct RootMessage {
+pub struct Root {
     // message fields
     pub schema_url: ::std::string::String,
     pub unencrypted_message: ::std::vec::Vec<u8>,
@@ -34,8 +34,8 @@ pub struct RootMessage {
     pub cached_size: ::protobuf::CachedSize,
 }
 
-impl RootMessage {
-    pub fn new() -> RootMessage {
+impl Root {
+    pub fn new() -> Root {
         ::std::default::Default::default()
     }
 
@@ -92,7 +92,7 @@ impl RootMessage {
     }
 }
 
-impl ::protobuf::Message for RootMessage {
+impl ::protobuf::Message for Root {
     fn is_initialized(&self) -> bool {
         true
     }
@@ -167,8 +167,8 @@ impl ::protobuf::Message for RootMessage {
         Self::descriptor_static()
     }
 
-    fn new() -> RootMessage {
-        RootMessage::new()
+    fn new() -> Root {
+        Root::new()
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -181,16 +181,16 @@ impl ::protobuf::Message for RootMessage {
                 let mut fields = ::std::vec::Vec::new();
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
                     "schema_url",
-                    |m: &RootMessage| { &m.schema_url },
-                    |m: &mut RootMessage| { &mut m.schema_url },
+                    |m: &Root| { &m.schema_url },
+                    |m: &mut Root| { &mut m.schema_url },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                     "unencrypted_message",
-                    |m: &RootMessage| { &m.unencrypted_message },
-                    |m: &mut RootMessage| { &mut m.unencrypted_message },
+                    |m: &Root| { &m.unencrypted_message },
+                    |m: &mut Root| { &mut m.unencrypted_message },
                 ));
-                ::protobuf::reflect::MessageDescriptor::new::<RootMessage>(
-                    "RootMessage",
+                ::protobuf::reflect::MessageDescriptor::new::<Root>(
+                    "Root",
                     fields,
                     file_descriptor_proto()
                 )
@@ -198,18 +198,18 @@ impl ::protobuf::Message for RootMessage {
         }
     }
 
-    fn default_instance() -> &'static RootMessage {
-        static mut instance: ::protobuf::lazy::Lazy<RootMessage> = ::protobuf::lazy::Lazy {
+    fn default_instance() -> &'static Root {
+        static mut instance: ::protobuf::lazy::Lazy<Root> = ::protobuf::lazy::Lazy {
             lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const RootMessage,
+            ptr: 0 as *const Root,
         };
         unsafe {
-            instance.get(RootMessage::new)
+            instance.get(Root::new)
         }
     }
 }
 
-impl ::protobuf::Clear for RootMessage {
+impl ::protobuf::Clear for Root {
     fn clear(&mut self) {
         self.clear_schema_url();
         self.clear_unencrypted_message();
@@ -217,22 +217,22 @@ impl ::protobuf::Clear for RootMessage {
     }
 }
 
-impl ::std::fmt::Debug for RootMessage {
+impl ::std::fmt::Debug for Root {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for RootMessage {
+impl ::protobuf::reflect::ProtobufValue for Root {
     fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
         ::protobuf::reflect::ProtobufValueRef::Message(self)
     }
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x18schema/rootmessage.proto\x12\0\"F\n\x0bRootMessage\x12\x16\n\nsche\
-    ma_url\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1f\n\x13unencrypted_message\
-    \x18\x02\x20\x01(\x0cB\x02\x18\0B\0b\x06proto3\
+    \n\x13./schema/root.proto\x12\0\"?\n\x04Root\x12\x16\n\nschema_url\x18\
+    \x01\x20\x01(\tB\x02\x18\0\x12\x1f\n\x13unencrypted_message\x18\x02\x20\
+    \x01(\x0cB\x02\x18\0B\0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

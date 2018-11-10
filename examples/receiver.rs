@@ -11,8 +11,9 @@ fn main() -> Result<(), failure::Error> {
 
     // Initialize handler
     let handler = PluginHandler::new();
-    let _test_protocol_schema = handler.load_plugin(&PathBuf::from("../../../libraries/test-protocol/target/debug/test_protocol.dll"))?;
-    let root_protocol_schema = handler.load_plugin(&PathBuf::from("../../../libraries/root-message/target/debug/root_message.dll"))?;
+    handler.load_plugin(&PathBuf::from("../../../libraries/test-protocol/target/debug/test_protocol.dll"))?;
+    let _test_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
+    let root_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/root.txt");
 
     // Receive a message from the sender crate.
     let socket = UdpSocket::bind("127.0.0.1:23462")?; // I chose a random port #

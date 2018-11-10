@@ -47,30 +47,40 @@ impl MessageInfo {
     }
 }
 
-pub trait FFILibrary {
+/// Each submessage in each library needs to impl these functions.
+pub trait SubLibrary {
     /// Get a nice name for simple display. This function may be going away.
-    fn get_name(&self) -> Result<String, Error>;
+    fn get_name(&self) -> String;
 
     /// Handle all messages. Return a Vec<MessageInfo> so that we can handle further submessage data
     fn handle(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error>;
 
+    // "where Self: Sized" is because we don't take &self. https://doc.rust-lang.org/error-index.html#method-has-no-receiver
     /// It exists to reference the schema that was used to create the library.
-    fn get_schema_url(&self) -> Result<String, Error>;
+    fn get_schema_url() -> String where Self: Sized;
+}
 
-    /// We want the protocol library itself to be responsible for generation of its own messages
-    fn generate_message(&self, template_name: &str) -> Result<String, Error>;
+pub trait FFILibrary {
+    /// Get name of sublibrary
+    fn get_name(&self, schema_url: &str) -> Result<String, Error>;
+
+    /// Handle all messages. Return a Vec<MessageInfo> so that we can handle further submessage data
+    fn handle(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error>;
+
+    /// Return a list of all schema urls
+    fn get_schema_urls(&self) -> Result<Vec<String>, Error>;
 
     /// We will use this for plugins, but will return None on static plugins.MessageInfo
     fn get_library(&self) -> Result<&lib::Library, Error>;
 }
 
 impl FFILibrary for DynamicLibrary {
-    fn get_name(&self) -> Result<String, Error> {
+    fn get_name(&self, schema_url: &str) -> Result<String, Error> {
         println!("Plugin: Getting name...");
         unsafe {
-            let func: lib::Symbol<unsafe extern fn() -> String> = 
+            let func: lib::Symbol<unsafe extern fn(&str) -> Result<String, Error>> = 
                         self.library.get(b"get_name").expect("get_name not found in library!");
-            Ok(func())
+            func(schema_url)
         }
     }
 
@@ -83,21 +93,12 @@ impl FFILibrary for DynamicLibrary {
         }
     }
 
-    fn get_schema_url(&self) -> Result<String, Error> {
+    fn get_schema_urls(&self) -> Result<Vec<String>, Error> {
         println!("Plugin: Get Schema URL...");
         unsafe {
-            let func: lib::Symbol<unsafe extern fn() -> String> = 
-                        self.library.get(b"get_schema_url").expect("get_schema_url function not found in library!");
-            Ok(func())
-        }
-    }
-
-    fn generate_message(&self, template_name: &str) -> Result<String, Error> {
-        println!("Plugin: Generating message {}...", template_name);
-        unsafe {
-            let func: lib::Symbol<unsafe extern fn(&str) -> Result<String, Error>> = 
-                        self.library.get(b"generate_message").expect("generate_message function not found in library!");
-            func(template_name)
+            let func: lib::Symbol<unsafe extern fn() -> Result<Vec<String>, Error>> = 
+                        self.library.get(b"get_schema_urls").expect("get_schema_urls function not found in library!");
+            func()
         }
     }
 
@@ -176,19 +177,28 @@ impl PluginHandler {
     }
 
     /// So that you can load different plugins while the application is running.
-    pub fn load_plugin(&self, path: &PathBuf) -> Result<String, Error> {
-        let path = path.to_str().ok_or(format_err!("Cannot convert to string"))?;
-        println!("Loading {}", path);
+    pub fn load_plugin(&self, path: &PathBuf) -> Result<(), Error> {
+        //let path_str = path.to_str().ok_or(format_err!("Cannot convert to string"))?;
+        println!("Loading {:?}", path);
+
+        if !path.exists() {
+            println!("Path {:?} does not exist!", path);
+        }
+
         let library = lib::Library::new(path)?;
     
         let plugin = DynamicLibrary {
             library
         };
 
-        let schema = plugin.get_schema_url()?.to_string();
-        println!("Loading plugin {:?} with schema {:?}", path, schema);
-        self.lock().unwrap().insert(schema.clone(), Arc::new(Mutex::new(plugin)));
-        Ok(schema)
+        let schema_urls: Vec<String> = plugin.get_schema_urls()?;
+        let am_plugin = Arc::new(Mutex::new(plugin));
+
+        for url in schema_urls.iter() {
+            println!("Loading plugin {:?} with schema {}", path, url);
+            self.lock().unwrap().insert(url.clone(), am_plugin.clone());
+        }
+        Ok(())
     }
 
     /// Continuously load from plugin directories
