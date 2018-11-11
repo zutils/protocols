@@ -178,8 +178,9 @@ impl PluginHandler {
 
     /// So that you can load different plugins while the application is running.
     pub fn load_plugin(&self, path: &PathBuf) -> Result<(), Error> {
-        //let path_str = path.to_str().ok_or(format_err!("Cannot convert to string"))?;
-        println!("Loading {:?}", path);
+        let path_str = path.to_str().ok_or(format_err!("Cannot convert to string"))?;
+        println!("Current Dir: {:?}", std::env::current_dir()?);
+        println!("Loading {}", path_str);
 
         if !path.exists() {
             println!("Path {:?} does not exist!", path);
@@ -191,11 +192,15 @@ impl PluginHandler {
             library
         };
 
+        println!("{:?} loaded successfully.", path);
+
         let schema_urls: Vec<String> = plugin.get_schema_urls()?;
         let am_plugin = Arc::new(Mutex::new(plugin));
 
+        println!("Urls: {:?}", schema_urls);
+
         for url in schema_urls.iter() {
-            println!("Loading plugin {:?} with schema {}", path, url);
+            println!("Loading schema {} from plugin {:?}", url, path);
             self.lock().unwrap().insert(url.clone(), am_plugin.clone());
         }
         Ok(())
