@@ -36,7 +36,7 @@ fn main() -> Result<(), Error> {
 
     // Initialize plugin handler
     let handler = PluginHandler::new();
-    handler.load_plugin(&PathBuf::from("../../../libraries/test-protocol/target/debug/test_protocol.dll"))?;
+    handler.load_plugin(&PathBuf::from("./libraries/test-protocol/target/debug/test_protocol.dll"))?;
 
     let test_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
     let _root_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/root.txt");
