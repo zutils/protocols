@@ -10,19 +10,19 @@ use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 pub mod root;
-pub mod test;
 pub mod root_interface;
+pub mod test;
 pub mod test_interface;
-use root_interface::RootInterface;
-use test_interface::TestInterface;
+// __PUBMODPROTOCOLS__ Do not remove this line. This line is used to add new protocols.
 
 type SubLibraryKeyValue = Box<SubLibrary+Sync>;
 
 lazy_static! {
     static ref SUBLIBRARIES: HashMap<String, SubLibraryKeyValue> = {
         let mut m: HashMap<String, SubLibraryKeyValue> = HashMap::new();
-        m.insert(RootInterface::get_schema_url(), Box::new(RootInterface{}));
-        m.insert(TestInterface::get_schema_url(), Box::new(TestInterface{}));
+        m.insert(test_interface::TestInterface::get_schema_url(), Box::new(test_interface::TestInterface{}));
+        m.insert(root_interface::RootInterface::get_schema_url(), Box::new(root_interface::RootInterface{}));
+        // __REGISTERINTERFACES__ Do not remove this line. This line is used to add new protocols.
         m
     };
 }
@@ -45,6 +45,7 @@ pub extern fn handle(info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
 #[no_mangle]
 /// Return list of all schema urls
 pub extern fn get_schema_urls() -> Result<Vec<String>, Error> {
+    //println!("Inside get_schema_urls inside plugin.... {:?}", SUBLIBRARIES.keys().len());
     Ok(SUBLIBRARIES.keys().map(|s| s.clone()).collect::<Vec<_>>())
 }
 

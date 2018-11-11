@@ -6,18 +6,20 @@ extern crate toml;
 extern crate toml_query;
 extern crate failure;
 
-use self::failure::Error;
+use self::failure::{Error, format_err};
 use std::fs::File;	
 use std::path::PathBuf;
 
 /// Build rust code from protobuffer. 
-pub fn build_rust_code_from_protobuffer(proto_filename: &str) -> Result<(), Error> {
+pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<(), Error> {
+	let path_str = proto_filename.to_str().ok_or(format_err!("Cannot create str from PathBuf!"))?;
+
 	let mut customize = pb::Customize::default();
 	customize.serde_derive = Some(true);
 
 	let args = pb::Args {
 			out_dir: "src",
-			input: &[proto_filename],
+			input: &[path_str],
 			includes: &[""],
 			customize
 	};
@@ -58,6 +60,20 @@ pub fn add_file_and_write_ipfs_hash(path: &PathBuf) -> Result<(), Error> {
 	}
 
     Ok(())
+}
+
+pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(),Error>) {
+	use std::fs;
+    let paths = fs::read_dir(path_str).unwrap();
+
+    for path in paths {
+		let path = path.unwrap().path();
+		println!("Building {:?}", &path);
+
+		if let Err(e) = func(&path) {
+			println!("{:?}", e);
+		}
+    }
 }
 
 fn write_to_file(new_file: &str, contents: &str) -> Result<(), Error> {
