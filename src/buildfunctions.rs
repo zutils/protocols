@@ -43,7 +43,7 @@ pub fn add_file_and_write_ipfs_hash(path: &PathBuf) -> Result<(), Error> {
 	let base_name: String = path.file_stem().unwrap().to_str().unwrap().to_string(); // Create string so that we can add it to thread.
 	let req = client.add(file)
 					.map(move |result| { 
-						let schema_url = "https://ipfs.io/".to_string() + &result.hash;
+						let schema_url = result.hash;
 						let schema_url_file_location = format!("./schema_urls/{}.txt", base_name);
                         write_to_file(&schema_url_file_location, &schema_url).unwrap();
                     })
@@ -56,7 +56,7 @@ pub fn add_file_and_write_ipfs_hash(path: &PathBuf) -> Result<(), Error> {
 
 	// We have to panic in the main thread.
 	if *should_panic.lock().unwrap() == true {
-		panic!(r#"Unable to retrieve schema URL. Make sure that IPFS daemon is running! You can get IPFS from ipfs.io"#);
+		panic!(r#"Unable to retrieve schema URL from ipfs. Make sure that IPFS daemon is running! You can get IPFS from ipfs.io\nIf you REALLY don't want to use ipfs, and care to handle the schema_url manually, modify your build.rs file."#);
 	}
 
     Ok(())
