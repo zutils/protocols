@@ -23,7 +23,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Handle message received.  
     // The submessage of the root-message will be a test-protocol message. If it is loaded in the handler, it will be handled.
-    let msg = MessageInfo::new(Vec::new(), &root_protocol_schema, &buf[0..byte_count]);
+    let msg = MessageInfo::new(&root_protocol_schema, &buf[0..byte_count]);
     handler.handle_msg_and_submsgs(msg)?;
 
     // handle_msg_and_submsgs(...) spawns a thread. If we do not sleep, the program will exit before thread handles the messages.
