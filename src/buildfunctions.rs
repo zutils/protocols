@@ -1,4 +1,5 @@
-extern crate protobuf_codegen_pure as pb;
+extern crate protobuf_codegen_pure as pcp;
+extern crate protoc_rust_grpc as prg;
 extern crate protobuf_codegen;
 extern crate ipfs_api;
 extern crate hyper;
@@ -10,21 +11,38 @@ use self::failure::{Error, format_err};
 use std::fs::File;	
 use std::path::PathBuf;
 
-/// Build rust code from protobuffer. 
+/// Call protoc on protobuffer and create non-rpc code
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<(), Error> {
 	let path_str = proto_filename.to_str().ok_or(format_err!("Cannot create str from PathBuf!"))?;
 
-	let mut customize = pb::Customize::default();
+	let mut customize = pcp::Customize::default();
 	customize.serde_derive = Some(true);
 
-	let args = pb::Args {
+	let args = pcp::Args {
 			out_dir: "src",
 			input: &[path_str],
-			includes: &[""],
+			includes: &["./schema"],
 			customize
 	};
 
-	pb::run(args).expect("protoc");
+	pcp::run(args).expect("protoc");
+
+	Ok(())
+}
+
+/// Call protoc on protobuffer and create only the rpc code
+pub fn build_rust_rpc_code_from_protobuffer(proto_filename: &PathBuf) -> Result<(), Error> {
+	let path_str = proto_filename.to_str().ok_or(format_err!("Cannot create str from PathBuf!"))?;
+
+	let args = prg::Args {
+			out_dir: "src",
+			input: &[path_str],
+			includes: &["./schema"],
+			rust_protobuf: false,
+			..Default::default()
+	};
+
+	prg::run(args).expect("protoc-rust-grpc");
 
 	Ok(())
 }
