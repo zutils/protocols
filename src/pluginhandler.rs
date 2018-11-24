@@ -36,14 +36,15 @@ impl Deref for DynamicLibrary {
 /// Structure to represent unhandled messages
 #[derive(Debug)]
 pub struct MessageInfo {
-    pub history: Vec<String>,
     pub schema_url: String,
     pub data: Vec<u8>,
 }
 
 impl MessageInfo {
-    pub fn new(history: Vec<String>, schema_url: &str, data: &[u8]) -> Self {
-        MessageInfo { history, schema_url: schema_url.to_string(), data: data.to_vec() }
+    pub fn new(schema_url: &str, data: &[u8]) -> Self {
+        MessageInfo { schema_url: schema_url.to_string(), 
+                      data: data.to_vec() 
+                    }
     }
 }
 
@@ -60,6 +61,7 @@ pub trait SubLibrary {
     fn get_schema_url() -> String where Self: Sized;
 }
 
+/// Version 0.0.1 is this one.  Update this value whenever FFI functions are modified.
 pub trait FFILibrary {
     /// Get name of sublibrary
     fn get_name(&self, schema_url: &str) -> Result<String, Error>;
@@ -69,6 +71,9 @@ pub trait FFILibrary {
 
     /// Return a list of all schema urls
     fn get_schema_urls(&self) -> Result<Vec<String>, Error>;
+
+    /// Get the FFI version. What FFI functions are standard?
+    fn get_ffi_version(&self) -> Result<String, Error>;
 
     /// We will use this for plugins, but will return None on static plugins.MessageInfo
     fn get_library(&self) -> Result<&lib::Library, Error>;
@@ -98,6 +103,15 @@ impl FFILibrary for DynamicLibrary {
         unsafe {
             let func: lib::Symbol<unsafe extern fn() -> Result<Vec<String>, Error>> = 
                         self.library.get(b"get_schema_urls").expect("get_schema_urls function not found in library!");
+            func()
+        }
+    }
+
+    fn get_ffi_version(&self) -> Result<String, Error> {
+        println!("Plugin: Get FFI Version...");
+        unsafe {
+            let func: lib::Symbol<unsafe extern fn() -> Result<String, Error>> = 
+                        self.library.get(b"get_ffi_version").expect("get_ffi_version function not found in library!");
             func()
         }
     }
@@ -196,9 +210,7 @@ impl PluginHandler {
 
         let schema_urls: Vec<String> = plugin.get_schema_urls()?;
         let am_plugin = Arc::new(Mutex::new(plugin));
-
-        println!("Urls: {:?}", schema_urls);
-
+        
         for url in schema_urls.iter() {
             println!("Loading schema {} from plugin {:?}", url, path);
             self.lock().unwrap().insert(url.clone(), am_plugin.clone());
