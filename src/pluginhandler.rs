@@ -19,6 +19,14 @@ use self::failure::{Error, format_err};
 use self::notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
 use self::signals::{Signal, Emitter, Am};
 
+/// Plugin data needs a way to be referenced instead of "String"
+#[derive(Debug, Clone)]
+pub struct PluginData(pub String);
+
+impl PluginData {
+    pub fn as_str(&self) -> &str { &self.0 }
+}
+
 /// This structure handles standard function calls that all compatible dynamic libraries should support.
 pub struct DynamicLibrary {
     library: lib::Library,
