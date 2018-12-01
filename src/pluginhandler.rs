@@ -67,10 +67,24 @@ pub trait SubLibrary {
     // "where Self: Sized" is because we don't take &self. https://doc.rust-lang.org/error-index.html#method-has-no-receiver
     /// It exists to reference the schema that was used to create the library.
     fn get_schema_url() -> String where Self: Sized;
+
+    /// Generate default message
+    fn generate_default_message(&self) -> Result<String, Error>;
 }
 
-/// Version 0.0.1 is this one.  Update this value whenever FFI functions are modified.
 pub trait FFILibrary {
+    /// We require a trait_version so that we can match it up with plugin version.
+    fn get_trait_ffi_version(&self) -> &'static str { "0.0.2" } // Update this whenever we modify the FFILibrary trait.
+
+    fn verify_plugin_and_trait_version(&self) -> Result<(), Error> {
+        let trait_version = self.get_trait_ffi_version();
+        let plugin_version = &self.get_plugin_ffi_version()?;
+        if plugin_version != trait_version {
+            return Err(failure::format_err!("Plugin version {:?} does not match trait version {:?}!", plugin_version, trait_version));
+        }
+        Ok(())
+    }
+
     /// Get name of sublibrary
     fn get_name(&self, schema_url: &str) -> Result<String, Error>;
 
@@ -80,11 +94,14 @@ pub trait FFILibrary {
     /// Return a list of all schema urls
     fn get_schema_urls(&self) -> Result<Vec<String>, Error>;
 
-    /// Get the FFI version. What FFI functions are standard?
-    fn get_ffi_version(&self) -> Result<String, Error>;
+    /// Get the FFI version fromt he plugin.
+    fn get_plugin_ffi_version(&self) -> Result<String, Error>;
 
     /// We will use this for plugins, but will return None on static plugins.MessageInfo
     fn get_library(&self) -> Result<&lib::Library, Error>;
+
+    /// Generate a default message for a named plugin
+    fn generate_default_message(&self, schema_url: &str) -> Result<String, Error>;
 }
 
 impl FFILibrary for DynamicLibrary {
@@ -115,12 +132,21 @@ impl FFILibrary for DynamicLibrary {
         }
     }
 
-    fn get_ffi_version(&self) -> Result<String, Error> {
+    fn get_plugin_ffi_version(&self) -> Result<String, Error> {
         println!("Plugin: Get FFI Version...");
         unsafe {
             let func: lib::Symbol<unsafe extern fn() -> Result<String, Error>> = 
-                        self.library.get(b"get_ffi_version").expect("get_ffi_version function not found in library!");
+                        self.library.get(b"get_plugin_ffi_version").expect("get_plugin_ffi_version function not found in library!");
             func()
+        }
+    }
+
+    fn generate_default_message(&self, schema_url: &str) -> Result<String, Error> {
+        println!("Plugin: Generate default message {:?}...", schema_url);
+        unsafe {
+            let func: lib::Symbol<unsafe extern fn(&str) -> Result<String, Error>> = 
+                        self.library.get(b"generate_default_message").expect("generate_default_message function not found in library!");
+            func(schema_url)
         }
     }
 
@@ -213,6 +239,8 @@ impl PluginHandler {
         let plugin = DynamicLibrary {
             library
         };
+
+        plugin.verify_plugin_and_trait_version()?;
 
         println!("{:?} loaded successfully.", path);
 
