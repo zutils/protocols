@@ -1,8 +1,4 @@
 #[macro_use] extern crate serde_derive;
-extern crate lazy_static;
-extern crate failure;
-extern crate protocols;
-extern crate protobuf;
 
 use failure::{Error, format_err};
 use protocols::pluginhandler::{MessageInfo, SubLibrary};

@@ -1,13 +1,4 @@
 //! The pluginhandler handles loading the correct plugins and routing calls between them.
-
-extern crate notify;
-extern crate libloading as lib;
-extern crate signals;
-extern crate glob;
-extern crate failure;
-extern crate serde;
-extern crate serde_json;
-
 use std::thread;
 use std::sync::mpsc::channel;
 use std::collections::HashMap;
@@ -15,9 +6,10 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 
-use self::failure::{Error, format_err};
-use self::notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
-use self::signals::{Signal, Emitter, Am};
+use libloading as lib;
+use failure::{Error, format_err};
+use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
+use signals::{Signal, Emitter, Am};
 
 /// Plugin data needs a way to be referenced instead of "String"
 #[derive(Debug, Clone)]
@@ -70,11 +62,14 @@ pub trait SubLibrary {
 
     /// Generate default message
     fn generate_default_message(&self) -> Result<String, Error>;
+
+    /// Handle receiving of a Remote Procedure Call
+    fn receive_rpc(&self, data: &[u8]) -> Result<(), Error>;
 }
 
 pub trait FFILibrary {
     /// We require a trait_version so that we can match it up with plugin version.
-    fn get_trait_ffi_version(&self) -> &'static str { "0.0.2" } // Update this whenever we modify the FFILibrary trait.
+    fn get_trait_ffi_version(&self) -> &'static str { "0.0.3" } // Update this whenever we modify the FFILibrary trait.
 
     fn verify_plugin_and_trait_version(&self) -> Result<(), Error> {
         let trait_version = self.get_trait_ffi_version();
@@ -102,6 +97,9 @@ pub trait FFILibrary {
 
     /// Generate a default message for a named plugin
     fn generate_default_message(&self, schema_url: &str) -> Result<String, Error>;
+
+    /// Handle receiving of a Remote Procedure Call
+    fn receive_rpc(&self, schema_url: &str, data: &[u8]) -> Result<(), Error>;
 }
 
 impl FFILibrary for DynamicLibrary {
@@ -147,6 +145,15 @@ impl FFILibrary for DynamicLibrary {
             let func: lib::Symbol<unsafe extern fn(&str) -> Result<String, Error>> = 
                         self.library.get(b"generate_default_message").expect("generate_default_message function not found in library!");
             func(schema_url)
+        }
+    }
+
+    fn receive_rpc(&self, schema_url: &str, data: &[u8]) -> Result<(), Error> {
+        println!("Plugin: Receiving RPC for {:?}...", schema_url);
+        unsafe {
+            let func: lib::Symbol<unsafe extern fn(&str, &[u8]) -> Result<(), Error>> = 
+                        self.library.get(b"receive_rpc").expect("receive_rpc function not found in library!");
+            func(schema_url, data)
         }
     }
 

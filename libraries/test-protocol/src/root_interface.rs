@@ -1,12 +1,6 @@
-extern crate protobuf;
-extern crate serde_json;
-extern crate serde;
-extern crate failure;
-extern crate protocols;
-
 use root::Root;
-use self::failure::{Error};
-use self::protocols::pluginhandler::{MessageInfo, SubLibrary};
+use failure::{Error};
+use protocols::pluginhandler::{MessageInfo, SubLibrary};
 
 pub struct RootInterface;
 

@@ -1,6 +1,3 @@
-extern crate failure;
-extern crate protocols;
-
 use protocols::buildfunctions;
 use failure::Error;
 use std::path::PathBuf;
