@@ -1,6 +1,5 @@
 //! The pluginhandler handles loading the correct plugins and routing calls between them.
-use std::thread;
-use std::sync::mpsc::channel;
+
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
@@ -11,12 +10,20 @@ use failure::{Error, format_err};
 use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
 use signals::{Signal, Emitter, Am};
 
-/// Plugin data needs a way to be referenced instead of "String"
+/// Any message data being passed around will use PluginData
 #[derive(Debug, Clone)]
-pub struct PluginData(pub String);
+pub struct PluginData(pub Vec<u8>);
 
 impl PluginData {
-    pub fn as_str(&self) -> &str { &self.0 }
+    pub fn as_ref(&self) -> &[u8] { &self.0 }
+    pub fn as_str(&self) -> Result<&str, Error> { Ok(::std::str::from_utf8(&self.0)?) }
+    pub fn to_string(&self) -> Result<String, Error> { Ok(self.as_str()?.to_string()) }
+}
+
+impl ::std::fmt::Display for PluginData {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "{:?}", self.to_string())
+    }
 }
 
 /// This structure handles standard function calls that all compatible dynamic libraries should support.
@@ -37,13 +44,13 @@ impl Deref for DynamicLibrary {
 #[derive(Debug)]
 pub struct MessageInfo {
     pub schema_url: String,
-    pub data: Vec<u8>,
+    pub data: PluginData,
 }
 
 impl MessageInfo {
     pub fn new(schema_url: &str, data: &[u8]) -> Self {
         MessageInfo { schema_url: schema_url.to_string(), 
-                      data: data.to_vec() 
+                      data: PluginData(data.to_vec()), 
                     }
     }
 }
@@ -61,7 +68,7 @@ pub trait SubLibrary {
     fn get_schema_url() -> String where Self: Sized;
 
     /// Generate default message
-    fn generate_default_message(&self) -> Result<String, Error>;
+    fn generate_default_message(&self, template: &str, args: Vec<&[u8]>) -> Result<PluginData, Error>;
 
     /// Handle receiving of a Remote Procedure Call
     fn receive_rpc(&self, data: &[u8]) -> Result<(), Error>;
@@ -69,7 +76,7 @@ pub trait SubLibrary {
 
 pub trait FFILibrary {
     /// We require a trait_version so that we can match it up with plugin version.
-    fn get_trait_ffi_version(&self) -> &'static str { "0.0.3" } // Update this whenever we modify the FFILibrary trait.
+    fn get_trait_ffi_version(&self) -> &'static str { "0.0.4" } // Update this whenever we modify the FFILibrary trait.
 
     fn verify_plugin_and_trait_version(&self) -> Result<(), Error> {
         let trait_version = self.get_trait_ffi_version();
@@ -96,7 +103,7 @@ pub trait FFILibrary {
     fn get_library(&self) -> Result<&lib::Library, Error>;
 
     /// Generate a default message for a named plugin
-    fn generate_default_message(&self, schema_url: &str) -> Result<String, Error>;
+    fn generate_default_message(&self, schema_url: &str, template: &str, args: Vec<&[u8]>) -> Result<PluginData, Error>;
 
     /// Handle receiving of a Remote Procedure Call
     fn receive_rpc(&self, schema_url: &str, data: &[u8]) -> Result<(), Error>;
@@ -139,12 +146,12 @@ impl FFILibrary for DynamicLibrary {
         }
     }
 
-    fn generate_default_message(&self, schema_url: &str) -> Result<String, Error> {
+    fn generate_default_message(&self, schema_url: &str, template: &str, args: Vec<&[u8]>) -> Result<PluginData, Error> {
         println!("Plugin: Generate default message {:?}...", schema_url);
         unsafe {
-            let func: lib::Symbol<unsafe extern fn(&str) -> Result<String, Error>> = 
+            let func: lib::Symbol<unsafe extern fn(&str, &str, Vec<&[u8]>) -> Result<PluginData, Error>> = 
                         self.library.get(b"generate_default_message").expect("generate_default_message function not found in library!");
-            func(schema_url)
+            func(schema_url, template, args)
         }
     }
 
@@ -209,7 +216,7 @@ impl PluginHandler {
         let self_clone = self.clone();
         let plugin = self.get_plugin_from_info(&info)?;
         let submsgs = plugin.lock().unwrap().handle(info)?;
-        thread::spawn(move || {
+        ::std::thread::spawn(move || {
             for msg in submsgs.into_iter() {
                 if let Err(e) = self_clone.handle_msg_and_submsgs(msg) {
                     println!("{:?}", e);
@@ -266,7 +273,7 @@ impl PluginHandler {
         let hash_map = self.clone();
         let signal = Signal::new_arc_mutex(move |path: &PathBuf| hash_map.load_plugin(path));
 
-        thread::spawn(move || {           
+        ::std::thread::spawn(move || {           
             if let Err(e) = blocking_watch_directory(watch_path, signal ){
                 println!("{:?}", e);
             }
@@ -277,6 +284,8 @@ impl PluginHandler {
 
 // Start file watcher on watch_path. Emit on_path_changed if a file changes.
 fn blocking_watch_directory(watch_path: PathBuf, on_path_changed: Am<Emitter<input=PathBuf>>) -> Result<(), Error> {
+    use std::sync::mpsc::channel;
+
     let (transmit, receive) = channel();
     let mut watcher = raw_watcher(transmit).unwrap();
     watcher.watch(watch_path, RecursiveMode::Recursive)?;
