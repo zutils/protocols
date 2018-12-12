@@ -22,7 +22,10 @@ impl PluginData {
 
 impl ::std::fmt::Display for PluginData {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self.to_string() {
+            Ok(data) => write!(f, "{:?}", data),
+            Err(e) => write!(f, "{:?}", e),
+        }
     }
 }
 
@@ -31,117 +34,82 @@ pub struct DynamicLibrary {
     library: lib::Library,
 }
 
-/// When we use the plugin directly, dereference to the library
-impl Deref for DynamicLibrary {
-    type Target = lib::Library;
-
-    fn deref(&self) -> &Self::Target {
-        &self.library
-    }
-}
-
 /// Structure to represent unhandled messages
 #[derive(Debug)]
 pub struct MessageInfo {
     pub schema_url: String,
+    pub rpc_method_name: Option<String>,
     pub data: PluginData,
+}
+
+impl ::std::fmt::Display for MessageInfo {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "schema_url: {} method_name: {:?}, data: {}", self.schema_url, self.rpc_method_name, self.data)
+    }
 }
 
 impl MessageInfo {
     pub fn new(schema_url: &str, data: &[u8]) -> Self {
         MessageInfo { schema_url: schema_url.to_string(), 
+                      rpc_method_name: None,
+                      data: PluginData(data.to_vec()), 
+                    }
+    }
+
+    pub fn new_rpc(schema_url: &str, rpc_method_name: &str, data: &[u8]) -> Self {
+        MessageInfo { schema_url: schema_url.to_string(), 
+                      rpc_method_name: Some(rpc_method_name.to_string()),
                       data: PluginData(data.to_vec()), 
                     }
     }
 }
 
-/// Each submessage in each library needs to impl these functions.
-pub trait SubLibrary {
-    /// Get a nice name for simple display. This function may be going away.
-    fn get_name(&self) -> String;
-
-    /// Handle all messages. Return a Vec<MessageInfo> so that we can handle further submessage data
-    fn handle(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error>;
-
-    // "where Self: Sized" is because we don't take &self. https://doc.rust-lang.org/error-index.html#method-has-no-receiver
-    /// It exists to reference the schema that was used to create the library.
-    fn get_schema_url() -> String where Self: Sized;
-
-    /// Generate default message
-    fn generate_default_message(&self, template: &str, args: Vec<&[u8]>) -> Result<PluginData, Error>;
-
-    /// Handle receiving of a Remote Procedure Call
-    fn receive_rpc(&self, data: &[u8]) -> Result<(), Error>;
+#[derive(Debug)]
+pub struct LibraryInfo {
+    pub schema_url: String,
+    pub name: String,
+    pub ffi_version: String,
 }
 
+/// Each submessage in each library needs to impl these functions.
 pub trait FFILibrary {
     /// We require a trait_version so that we can match it up with plugin version.
-    fn get_trait_ffi_version(&self) -> &'static str { "0.0.4" } // Update this whenever we modify the FFILibrary trait.
+    fn get_trait_ffi_version(&self) -> &'static str { "0.0.7" } // Update this whenever we modify the FFILibrary trait.
 
     fn verify_plugin_and_trait_version(&self) -> Result<(), Error> {
         let trait_version = self.get_trait_ffi_version();
-        let plugin_version = &self.get_plugin_ffi_version()?;
-        if plugin_version != trait_version {
-            return Err(failure::format_err!("Plugin version {:?} does not match trait version {:?}!", plugin_version, trait_version));
+        for info in self.get_info()? {
+            if info.ffi_version != trait_version {
+                return Err(failure::format_err!("Plugin {:?} does not match trait version {:?}!", info, trait_version));
+            }
         }
         Ok(())
     }
 
-    /// Get name of sublibrary
-    fn get_name(&self, schema_url: &str) -> Result<String, Error>;
 
-    /// Handle all messages. Return a Vec<MessageInfo> so that we can handle further submessage data
-    fn handle(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error>;
+    /// Get any information about this library
+    fn get_info(&self) -> Result<Vec<LibraryInfo>, Error>;
 
-    /// Return a list of all schema urls
-    fn get_schema_urls(&self) -> Result<Vec<String>, Error>;
-
-    /// Get the FFI version fromt he plugin.
-    fn get_plugin_ffi_version(&self) -> Result<String, Error>;
-
-    /// We will use this for plugins, but will return None on static plugins.MessageInfo
-    fn get_library(&self) -> Result<&lib::Library, Error>;
-
-    /// Generate a default message for a named plugin
+    /// Generate default message
     fn generate_default_message(&self, schema_url: &str, template: &str, args: Vec<&[u8]>) -> Result<PluginData, Error>;
 
-    /// Handle receiving of a Remote Procedure Call
-    fn receive_rpc(&self, schema_url: &str, data: &[u8]) -> Result<(), Error>;
+    /// Handle all messages. Return a Vec<MessageInfo> so that we can handle further submessage data
+    fn handle_trusted(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error>;
+
+    /// Handle receiving of a trusted Remote Procedure Call
+    fn receive_trusted_rpc(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error>;
+
+    /// Handle receiving of an untrusted Remote Procedure Call
+    fn receive_untrusted_rpc(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error>;
 }
 
+
 impl FFILibrary for DynamicLibrary {
-    fn get_name(&self, schema_url: &str) -> Result<String, Error> {
-        println!("Plugin: Getting name...");
+    fn get_info(&self) -> Result<Vec<LibraryInfo>, Error> {
+        println!("Plugin: Getting info...");
         unsafe {
-            let func: lib::Symbol<unsafe extern fn(&str) -> Result<String, Error>> = 
-                        self.library.get(b"get_name").expect("get_name not found in library!");
-            func(schema_url)
-        }
-    }
-
-    fn handle(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
-        println!("Plugin: Handling data...");
-        unsafe {
-            let func: lib::Symbol<unsafe extern fn(MessageInfo) -> Result<Vec<MessageInfo>, Error>> = 
-                        self.library.get(b"handle").expect("handle function not found in library!");
-            func(info)
-        }
-    }
-
-    fn get_schema_urls(&self) -> Result<Vec<String>, Error> {
-        println!("Plugin: Get Schema URL...");
-        unsafe {
-            let func: lib::Symbol<unsafe extern fn() -> Result<Vec<String>, Error>> = 
-                        self.library.get(b"get_schema_urls").expect("get_schema_urls function not found in library!");
-            func()
-        }
-    }
-
-    fn get_plugin_ffi_version(&self) -> Result<String, Error> {
-        println!("Plugin: Get FFI Version...");
-        unsafe {
-            let func: lib::Symbol<unsafe extern fn() -> Result<String, Error>> = 
-                        self.library.get(b"get_plugin_ffi_version").expect("get_plugin_ffi_version function not found in library!");
+            let func: lib::Symbol<unsafe extern fn() -> Result<Vec<LibraryInfo>, Error>> = 
+                        self.library.get(b"get_info").expect("get_info not found in library!");
             func()
         }
     }
@@ -155,17 +123,31 @@ impl FFILibrary for DynamicLibrary {
         }
     }
 
-    fn receive_rpc(&self, schema_url: &str, data: &[u8]) -> Result<(), Error> {
-        println!("Plugin: Receiving RPC for {:?}...", schema_url);
+    fn handle_trusted(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
+        println!("Plugin: Handling data...");
         unsafe {
-            let func: lib::Symbol<unsafe extern fn(&str, &[u8]) -> Result<(), Error>> = 
-                        self.library.get(b"receive_rpc").expect("receive_rpc function not found in library!");
-            func(schema_url, data)
+            let func: lib::Symbol<unsafe extern fn(MessageInfo) -> Result<Vec<MessageInfo>, Error>> = 
+                        self.library.get(b"handle").expect("handle function not found in library!");
+            func(info)
         }
     }
 
-    fn get_library(&self) -> Result<&lib::Library, Error> {
-        Ok(&self.library)
+    fn receive_trusted_rpc(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
+        println!("Plugin: Receiving trusted RPC for {:?}...", info);
+        unsafe {
+            let func: lib::Symbol<unsafe extern fn(MessageInfo) -> Result<Vec<MessageInfo>, Error>> = 
+                        self.library.get(b"receive_trusted_rpc").expect("receive_trusted_rpc function not found in library!");
+            func(info)
+        }
+    }
+
+    fn receive_untrusted_rpc(&self, info: MessageInfo) -> Result<Vec<MessageInfo>, Error> {
+        println!("Plugin: Receiving untrusted RPC for {:?}...", info);
+        unsafe {
+            let func: lib::Symbol<unsafe extern fn(MessageInfo) -> Result<Vec<MessageInfo>, Error>> = 
+                        self.library.get(b"receive_untrusted_rpc").expect("receive_untrusted_rpc function not found in library!");
+            func(info)
+        }
     }
 }
 
@@ -206,19 +188,47 @@ impl PluginHandler {
         Ok(plugin.clone())
     }
 
-    fn get_plugin_from_info(&self, info: &MessageInfo) -> Result<FFILibraryHashMapValue, Error> {
-        Ok(self.get_plugin(&info.schema_url)?)
+    /// Get the library from the map, and handle results as trusted
+    pub fn handle_trusted_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
+        println!("Handle trusted message {:?}", info);
+        let self_clone = self.clone();
+        let plugin = self.get_plugin(&info.schema_url)?;
+
+        // Call proper message
+        let method_name = info.rpc_method_name.clone();
+        let additional_messages = match method_name {
+            Some(_method_name) => plugin.lock().unwrap().receive_trusted_rpc(info)?,
+            None => plugin.lock().unwrap().handle_trusted(info)?,
+        };
+
+        // We want results to be handled non-blocking and iteratively.
+        ::std::thread::spawn(move || {
+            for msg in additional_messages.into_iter() {
+                if let Err(e) = self_clone.handle_trusted_msg_and_submsgs(msg) {
+                    println!("{:?}", e);
+                }
+            }
+        });
+        Ok(())
     }
 
-    /// Get the library from the map, and call its exported "handle" function. 
-    pub fn handle_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
-        println!("Handle message {:?}", info);
+    /// Get the library from the map, and handle results as untrusted
+    pub fn handle_untrusted_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
+        println!("Handle untrusted message {:?}", info);
         let self_clone = self.clone();
-        let plugin = self.get_plugin_from_info(&info)?;
-        let submsgs = plugin.lock().unwrap().handle(info)?;
+        let plugin = self.get_plugin(&info.schema_url)?;
+
+        // Call proper message
+        let method_name = info.rpc_method_name.clone();
+        let additional_messages = match method_name {
+            Some(_method_name) => plugin.lock().unwrap().receive_untrusted_rpc(info)?,
+            None => { println!("Cannot handle untrusted messages! Only Rpc!"); Vec::new() },
+        };
+
+        // We want results to be handled non-blocking and iteratively.
         ::std::thread::spawn(move || {
-            for msg in submsgs.into_iter() {
-                if let Err(e) = self_clone.handle_msg_and_submsgs(msg) {
+            for msg in additional_messages.into_iter() {
+                if let Err(e) = self_clone.handle_untrusted_msg_and_submsgs(msg) {
                     println!("{:?}", e);
                 }
             }
@@ -258,12 +268,12 @@ impl PluginHandler {
 
         println!("{:?} loaded successfully.", path);
 
-        let schema_urls: Vec<String> = plugin.get_schema_urls()?;
-        let am_plugin = Arc::new(Mutex::new(plugin));
+        let infos = plugin.get_info()?;
+        let plugin = Arc::new(Mutex::new(plugin));
         
-        for url in schema_urls.iter() {
-            println!("Loading schema {} from plugin {:?}", url, path);
-            self.lock().unwrap().insert(url.clone(), am_plugin.clone());
+        for info in infos {
+            println!("Loading schema {:?} from plugin {:?}", info, path);
+            self.lock().unwrap().insert(info.schema_url.clone(), plugin.clone());
         }
         Ok(())
     }
