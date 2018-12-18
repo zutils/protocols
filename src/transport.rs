@@ -7,11 +7,11 @@ use std::collections::HashMap;
 #[derive(Default)]
 pub struct TransportationNode {
     nodes: Vec<TransportationNode>,
-    modules: HashMap<String, Box<TransportationToModuleGlue>>, // String is schema_url of some type... using Schema gave me errors.
+    modules: HashMap<String, Box<TransportationToModuleGlue + Sync>>, // String is schema_url of some type... using Schema gave me errors.
 }
 
 impl TransportationNode {
-    pub fn add_interface<M: 'static + TransportationToModuleGlue + CommonModule>(&mut self, module: M) {
+    pub fn add_interface<M: 'static + TransportationToModuleGlue + CommonModule + Sync>(&mut self, module: M) {
         match module.get_info(Empty::new()) {
             Ok(ref vec_info) if vec_info.get_vec().len() > 1 => println!("Module is returning too much info!"),
             Ok(ref vec_info) if vec_info.get_vec().len() == 1 => {

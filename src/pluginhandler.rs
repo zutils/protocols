@@ -7,7 +7,7 @@ use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
 use signals::{Signal, Emitter, Am};
 
 use crate::transmission_interface::transmission::Error as TError;
-use crate::transmission_interface::transmission::{self, Transmission, Schema, Data, DataType, VecTransmission};
+use crate::transmission_interface::transmission::{self, Schema, Transmission, Data, DataType, VecTransmission};
 use crate::transmission_interface::temp_transmission_rpc::ModuleToTransportationGlue;
 use crate::transport::Propagator;
 
@@ -53,16 +53,20 @@ impl CommonFFI for libloading::Library {
 }
 
 pub trait ToDataConverter: protobuf::Message {
-    fn to_data(&self, ipfs: &str) -> Result<Data, Error> {
-        let mut schema = Schema::new();
-        schema.set_Ipfs(ipfs.to_string());
+    fn to_data(&self, schema: &Schema) -> Result<Data, Error> {
         let serialized_data = self.write_to_bytes()?;
 
         let mut ret = Data::new();
-        ret.set_decode_schema(schema);
+        ret.set_decode_schema(schema.clone());
         ret.set_serialized_data(serialized_data);
         Ok(ret)
     }
+}
+
+pub fn schema_ipfs_from_str(schema_str: &str) -> Schema {
+    let mut schema = Schema::new();
+    schema.set_Ipfs(schema_str.to_string());
+    schema
 }
 
 pub fn from_data<T: protobuf::Message>(data: &Data) -> Result<(Schema, T), Error> {

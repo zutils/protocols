@@ -1,4 +1,5 @@
-use protocols::buildfunctions;
+pub mod buildfunctions;
+
 use failure::Error;
 use std::path::PathBuf;
 
