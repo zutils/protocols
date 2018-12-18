@@ -1,36 +1,32 @@
 //! buildfunctions provides functions to be used in plugins' build.rs file.
 use protoc_rust_grpc as prg;
+use protobuf_codegen_pure as pcp;
 use failure::{Error, format_err};
 use std::fs::File;	
 use std::path::PathBuf;
 
 /// Call protoc on protobuffer and create non-rpc code
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<(), Error> {
-	use std::path::{Path, PathBuf};
-	use pb_rs::types::{Config, FileDescriptor};
-	use std::env;
-
 	println!("Building protobuf for {:?}", &proto_filename);
 
 	let path_str = proto_filename.to_str().ok_or(format_err!("Cannot create str from PathBuf!"))?;
 
-	let base_name = base_name(proto_filename);
-	let out_dir = out_dir(&proto_filename);
+	let mut customize = pcp::Customize::default();
+	customize.serde_derive = Some(true);
+
+	let out_dir = &out_dir(&proto_filename);
 	make_sure_path_exists(&out_dir)?;
 
-    let config = Config {
-        in_file: proto_filename,
-        out_file: PathBuf::from(out_dir + "/" + basename + ".proto"),
-        single_module: false,
-        import_search_path: vec![PathBuf::from("./schema")],
-        no_output: false,
-        error_cycle: false,
-        headers: false, // What does this do? hmm...
-    };
+	let args = pcp::Args {
+			out_dir: &out_dir,
+			input: &[path_str],
+			includes: &["./schema"],
+			customize
+	};
 
-    FileDescriptor::write_proto(&config).unwrap();
+	pcp::run(args).expect("protoc");
 
-	println!("Protobuf to rust creation successful. {}", path_str);
+	println!("Protoc ran on {}", path_str);
 	Ok(())
 }
 
@@ -87,7 +83,14 @@ pub fn add_file_and_write_ipfs_hash(path: &PathBuf) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(),Error>) {
+pub fn modify_file(path: &PathBuf, pretext: &str, posttext: &str) -> Result<(), Error> {
+	let file_data = ::std::fs::read_to_string(path)?;
+	let modified_file = file_data.replace(pretext, posttext);
+	write_to_file(path, &modified_file)?;
+	Ok(())
+}
+
+pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(), Error>) {
 	use std::fs;
     let paths = fs::read_dir(path_str).unwrap();
 
@@ -114,7 +117,7 @@ fn base_name(protobuf_path: &PathBuf) -> String {
 }
 
 fn out_dir(protobuf_path: &PathBuf) -> String {
-	"src/".to_owned() + &base_name(protobuf_path) + "_interface"
+	"./src/".to_owned() + &base_name(protobuf_path) + "_interface"
 }
 
 fn make_sure_path_exists(path: &str) -> Result<(), Error> {

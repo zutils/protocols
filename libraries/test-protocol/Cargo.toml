@@ -5,21 +5,17 @@ authors = ["James Prince <34577138+zutils@users.noreply.github.com>"]
 
 [dependencies]
 protobuf = "*"
-serde = "*"
-serde_json = "*"
-serde_derive = "*"
+#serde = "*"
+#serde_json = "*"
+#serde_derive = "*"
 failure = "*"
 lazy_static = "*"
 protocols = { path = "../../" }
 
 
 [build-dependencies]
-failure = "0.1.2"
+failure = "*"
 protocols = { path = "../../" }
-
-[features]
-with-serde = ["protobuf/with-serde"]
-default = ["with-serde"]
 
 [lib]
 crate-type = ["dylib"]

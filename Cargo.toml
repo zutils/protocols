@@ -12,12 +12,15 @@ edition = "2018"
 
 [dependencies]
 failure = "0.1.3"
-signals = "0.0.2"
+signals = { path = "../signals" }
 libloading = "0.5"
 notify = "4.0.6"
 glob = "0.2"
-quick-protobuf = "0.6.3"
-protoc_rust_grpc = "0.6.1"
+#quick-protobuf = "0.6.3"
+protobuf = "2.2.0"
+protobuf-codegen = "2.2.0"
+protobuf-codegen-pure = "2.2.0"
+protoc-rust-grpc = "0.6.1"
 pb-rs = "0.7.0"
 ipfs-api = "0.5.0-alpha2"
 hyper = "0.12.18"
@@ -28,6 +31,7 @@ rand = "0.6.1"
 [build-dependencies]
 protocols = { git = "https://github.com/zutils/protocols" }
 failure = "0.1.3"
+#pb-rs = "0.7.0"
 
 [badges]
 travis-ci = { repository = "zutils/protocols" }

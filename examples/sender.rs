@@ -1,60 +1,43 @@
-extern crate failure;
-extern crate protocols;
-extern crate serde_json;
-extern crate rand;
-extern crate libloading as lib;
-
 use std::net::UdpSocket;
+use std::path::PathBuf;
 
-use protocols::pluginhandler::{PluginHandler, FFILibraryHashMapValue};
-use rand::Rng;
-use failure::Error;
+use protocols::pluginhandler::{PluginHandler, DynamicLibraryLoader};
+use protocols::transmission_interface::transmission::{GenerateMessageInfo, Data};
+use protocols::transmission_interface::temp_transmission_rpc::ModuleToTransportationGlue;
 
-// Future: Replace these with a macro of some sort.
-fn generate_root_message(plugin: &FFILibraryHashMapValue, schema_url: &str, data: &[u8]) -> Result<String, Error> {
-    println!("Nonstandard function: Generating root message for {}...", schema_url);
-    let plugin = plugin.lock().unwrap();
-    unsafe {
-        let func: lib::Symbol<unsafe extern fn(&str, &[u8]) -> Result<String, Error>> = 
-                    plugin.get_library()?.get(b"generate_root_message").expect("generate_message function not found in library!");
-        func(schema_url, data)
-    }
-}
+fn main() -> Result<(), failure::Error> {
+    use rand::Rng;
+    use protobuf::RepeatedField;
+    use protobuf::Message;
 
-fn generate_test_message(plugin: &FFILibraryHashMapValue, name: &str, data: &str) -> Result<String, Error> {
-    println!("Nonstandard function: Generating test message {}...", name);
-    let plugin = plugin.lock().unwrap();
-    unsafe {
-        let func: lib::Symbol<unsafe extern fn(&str, &str) -> Result<String, Error>> = 
-                    plugin.get_library()?.get(b"generate_test_message").expect("generate_message function not found in library!");
-        func(name, data)
-    }
-}
-
-fn main() -> Result<(), Error> {
-    use std::path::PathBuf;
-
-    // Initialize plugin handler
+    // Initialize plugin handler. The PluginHandler is ALSO our module root.
     let handler = PluginHandler::new();
     handler.load_plugin(&PathBuf::from("./libraries/test-protocol/target/debug/test_protocol.dll"))?;
 
-    let test_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
-    let _root_protocol_schema = include_str!("../libraries/test-protocol/schema_urls/root.txt");
+    // Get the schema URLs from the files. By default, create-protocols-plugin generates these in a file we can pull from :)
+    let test_schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
+   
+    // Create a GenerateMessageInfo structure and pass on to a function call
+    let mut generation = GenerateMessageInfo::default();
+    generation.args = RepeatedField::from_vec(vec![b"Test Name".to_vec(), b"Test Data".to_vec()]);
+    generation.template = test_schema.to_string();
 
-    // Calling non-standard functions for message generation
-    let plugin = handler.get_plugin(&test_protocol_schema)?; // We know this is the same plugin as the root protocol
-    let test_data = generate_test_message(&plugin, "Test Name", "Test Data")?;
-    let root_data = generate_root_message(&plugin, &test_protocol_schema, test_data.as_bytes())?;
-    
+    // Create a schema so the handler knows what module to call.
+    let mut schema = Schema::new();
+    schema.set_ipfs(test_schema.to_string();
+
+    // Propogate through the handler tree to find a module matching the schema, and pass the generation info to it.
+    let test_data = handler.generate_default_message(schema, generation)?;
+
     // Send to localhost. Use the receiver binary to receive this data.
-    println!("Sending: {:?}", root_data);
+    println!("Sending: {:?}", test_data);
 
     let port = rand::thread_rng().gen_range(1025, 65536);
     let port_str = port.to_string();
     let bind_address = "127.0.0.1:".to_string() + &port_str;
     println!("Connecting to {}", bind_address);
     let socket = UdpSocket::bind(bind_address)?; // I chose a random port # It doesn't matter.
-    socket.send_to(root_data.to_string().as_bytes(), "127.0.0.1:23462")?; // Port 23462 aligns with the receive port in the receiver program
+    socket.send_to(&test_data.write_to_bytes()?, "127.0.0.1:23462")?; // Port 23462 aligns with the receive port in the receiver program
 
     Ok(())
 }
