@@ -42,9 +42,9 @@ pub trait TransportationToModuleGlue: CommonModule {
         let data_type_result = match module_ret {
             Ok(vecmoduleinfo) => DataType_oneof_result::vecmoduleinfo(vecmoduleinfo),
             Err(e) => DataType_oneof_result::error( {
-                let mut e = TError::new(); 
-                e.set_error(format!("{:?}",e));
-                e
+                let mut err = TError::new(); 
+                err.set_error(format!("{:?}",e));
+                err
             }),
         };
 
@@ -56,19 +56,19 @@ pub trait TransportationToModuleGlue: CommonModule {
         vec![ret]
     }
 
-    fn generate_default_message_glue(&self, transmission: &Transmission) -> Vec<Transmission> { 
+    fn generate_default_message_glue(&self, _transmission: &Transmission) -> Vec<Transmission> { 
         println!("generate_default_message(transmission) not yet implemented!"); 
         Vec::new()
     }
-    fn handle_trusted_glue(&self, transmission: &Transmission) -> Vec<Transmission> { 
+    fn handle_trusted_glue(&self, _transmission: &Transmission) -> Vec<Transmission> { 
         println!("handle_trusted(transmission) not yet implemented!"); 
         Vec::new()
     }
-    fn receive_trusted_rpc_glue(&self, transmission: &Transmission) -> Vec<Transmission> { 
+    fn receive_trusted_rpc_glue(&self, _transmission: &Transmission) -> Vec<Transmission> { 
         println!("receive_trusted_rpc(transmission) not yet implemented!"); 
         Vec::new()
     }
-    fn receive_untrusted_rpc_glue(&self, transmission: &Transmission) -> Vec<Transmission> { 
+    fn receive_untrusted_rpc_glue(&self, _transmission: &Transmission) -> Vec<Transmission> { 
         println!("receive_untrusted_rpc(transmission) not yet implemented!"); 
         Vec::new()
     }
@@ -76,7 +76,7 @@ pub trait TransportationToModuleGlue: CommonModule {
 
 /// This is glue to package up requests into Transmissions and unpacking them.
 pub trait ModuleToTransportationGlue: Propagator {
-    fn get_info(&self, p: Empty) -> VecModuleInfo {
+    fn get_info(&self, _empty: Empty) -> VecModuleInfo {
         // Generate transmission
         let mut transmission = Transmission::default();
         transmission.set_request_type(RequestType::GET_INFO);
@@ -93,17 +93,17 @@ pub trait ModuleToTransportationGlue: Propagator {
                 let payload = transportation.take_payload();
                 match payload.result.unwrap() { // We can unwrap because we just checked is_some() above.
                     DataType_oneof_result::error(ref m) => println!("Module returned error: {:?}", m),
-                    DataType_oneof_result::data(ref m) => println!("Error! Payload is incorrect type: data"),
+                    DataType_oneof_result::data(ref _m) => println!("Error! Payload is incorrect type: data"),
                     DataType_oneof_result::vecmoduleinfo(ref m) => {
                         for new in m.vec.clone().into_iter() { // No append function exists for RepeatedField.
                             result.vec.push(new);
                         }
                     },
-                    DataType_oneof_result::rpcdata(ref m) => println!("Error! Payload is incorrect type: rpcdata"),
-                    DataType_oneof_result::generatemessageinfo(ref m) => println!("Error! Payload is incorrect type: generatemessageinfo"),
-                    DataType_oneof_result::empty(ref m) => println!("Error! Payload is incorrect type: empty"),
-                    DataType_oneof_result::vecdata(ref m) => println!("Error! Payload is incorrect type: vecdata"),
-                    DataType_oneof_result::vecdatarpc(ref m) => println!("Error! Payload is incorrect type: vecdatarpc"),
+                    DataType_oneof_result::rpcdata(ref _m) => println!("Error! Payload is incorrect type: rpcdata"),
+                    DataType_oneof_result::generatemessageinfo(ref _m) => println!("Error! Payload is incorrect type: generatemessageinfo"),
+                    DataType_oneof_result::empty(ref _m) => println!("Error! Payload is incorrect type: empty"),
+                    DataType_oneof_result::vecdata(ref _m) => println!("Error! Payload is incorrect type: vecdata"),
+                    DataType_oneof_result::vecdatarpc(ref _m) => println!("Error! Payload is incorrect type: vecdatarpc"),
                 }
             } else {
                 println!("No payload exists!");
@@ -113,20 +113,20 @@ pub trait ModuleToTransportationGlue: Propagator {
         result
     }
 
-    fn generate_default_message(&self, destination: Schema, p: GenerateMessageInfo) -> Result<Data, Error> { 
+    fn generate_default_message(&self, _destination: Schema, _message_info: GenerateMessageInfo) -> Result<Data, Error> { 
         Err(failure::format_err!("generate_default_message unimplemented!"))
     }
 
     // handle of straight data is special because the data message contains the receiver.
-    fn handle_trusted(&self, p: Data) -> Result<VecData, Error> { 
+    fn handle_trusted(&self, _data: Data) -> Result<VecData, Error> { 
         Err(failure::format_err!("handle_trusted unimplemented!"))
     }
 
-    fn receive_trusted_rpc(&self, destination: Schema, p: RpcData) -> Result<VecRpcData, Error> {
+    fn receive_trusted_rpc(&self, _destination: Schema, _rpc: RpcData) -> Result<VecRpcData, Error> {
         Err(failure::format_err!("receive_trusted_rpc unimplemented!")) 
     }
 
-    fn receive_untrusted_rpc(&self, destination: Schema, p: RpcData) -> Result<VecRpcData, Error> {
+    fn receive_untrusted_rpc(&self, _destination: Schema, _rpc: RpcData) -> Result<VecRpcData, Error> {
         Err(failure::format_err!("receive_untrusted_rpc unimplemented!"))
     }
 }

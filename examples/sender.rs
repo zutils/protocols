@@ -2,7 +2,7 @@ use std::net::UdpSocket;
 use std::path::PathBuf;
 
 use protocols::pluginhandler::{PluginHandler, DynamicLibraryLoader};
-use protocols::transmission_interface::transmission::{GenerateMessageInfo, Data};
+use protocols::transmission_interface::transmission::{GenerateMessageInfo, Schema};
 use protocols::transmission_interface::temp_transmission_rpc::ModuleToTransportationGlue;
 
 fn main() -> Result<(), failure::Error> {
@@ -24,7 +24,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Create a schema so the handler knows what module to call.
     let mut schema = Schema::new();
-    schema.set_ipfs(test_schema.to_string();
+    schema.set_Ipfs(test_schema.to_string());
 
     // Propogate through the handler tree to find a module matching the schema, and pass the generation info to it.
     let test_data = handler.generate_default_message(schema, generation)?;

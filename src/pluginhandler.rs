@@ -65,7 +65,7 @@ pub trait ToDataConverter: protobuf::Message {
     }
 }
 
-fn from_data<T: protobuf::Message>(data: &Data) -> Result<(Schema, T), Error> {
+pub fn from_data<T: protobuf::Message>(data: &Data) -> Result<(Schema, T), Error> {
     let schema = data.get_decode_schema();
     let serialized_data = data.get_serialized_data();
     Ok((schema.to_owned(), protobuf::parse_from_bytes(serialized_data)?))
@@ -85,18 +85,12 @@ pub fn parse_data_as_transmission(data: &[u8]) -> Result<Transmission, Error> {
     Ok(protobuf::parse_from_bytes(&data)?)
 }
 
-trait VecTransmissionTranslater {
-    fn to_VecTransmission(vec_transmission: Vec<Transmission>) -> VecTransmission;
-}
-
-impl VecTransmissionTranslater for Vec<Transmission> {
-    fn to_VecTransmission(vec_transmission: Vec<Transmission>) -> VecTransmission {
-        let mut ret = VecTransmission::new();
-        for t in vec_transmission {
-            ret.vec.push(t);
-        }
-        ret
+pub fn to_vectransmission(vec_transmission: Vec<Transmission>) -> VecTransmission {
+    let mut ret = VecTransmission::new();
+    for t in vec_transmission {
+        ret.vec.push(t);
     }
+    ret
 }
 
 /// Allow us to use CommonModule functions on the PluginHandler

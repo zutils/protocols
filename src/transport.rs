@@ -20,7 +20,7 @@ impl TransportationNode {
                 self.modules.insert(schema.as_string().to_string(), Box::new(module)); },
             Ok(ref vec_info) if vec_info.get_vec().len() == 0 => println!("No Info available from module!"),
             Ok(_) => println!("Cannot add module to Transportation Node!"),
-            Err(e) => println!("Cannot add module to Transportation Node!"),
+            Err(e) => println!("Cannot add module to Transportation Node! {:?}", e),
         }
     }
 
@@ -47,7 +47,7 @@ impl Propagator for TransportationNode {
         // Handle if there is no destination.
         if transmission.destination.is_none() {
             let mut new_transmissions = self.modules.iter()
-                .fold(Vec::new(), |all, (key, module)| module.handle_transmission(transmission) );
+                .fold(Vec::new(), |_all, (_key, module)| module.handle_transmission(transmission) );
             ret.append(&mut new_transmissions);
         } else { 
             // If we are going to a destination, append the transmissions
@@ -62,7 +62,7 @@ impl Propagator for TransportationNode {
         
         // Propagate and collect.
         let mut new_transmissions = self.nodes.iter()
-            .fold(Vec::new(), |all, node| node.propagate_transmission(transmission) );
+            .fold(Vec::new(), |_all, node| node.propagate_transmission(transmission) );
         ret.append(&mut new_transmissions);
         
         ret
