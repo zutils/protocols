@@ -1,0 +1,7 @@
+{
+    "rust-client.channel": "stable",
+    "rust.rustup": {
+        "toolchain": "stable-x86_64-pc-windows-msvc",
+        "nightlyToolchain": "stable-x86_64-pc-windows-msvc"
+    },
+}

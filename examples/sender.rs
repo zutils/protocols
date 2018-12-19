@@ -2,8 +2,9 @@ use std::net::UdpSocket;
 use std::path::PathBuf;
 
 use protocols::pluginhandler::{PluginHandler, DynamicLibraryLoader};
-use protocols::transmission_interface::transmission::{GenerateMessageInfo, Schema};
-use protocols::transmission_interface::temp_transmission_rpc::ModuleToTransportationGlue;
+use protocols::transport_autogen::transport::{GenerateMessageInfo, Schema};
+use protocols::transport_autogen::transport_glue::ModuleToTransportGlue;
+//use protocols::core;
 
 fn main() -> Result<(), failure::Error> {
     use rand::Rng;
@@ -14,20 +15,19 @@ fn main() -> Result<(), failure::Error> {
     let handler = PluginHandler::new();
     handler.load_plugin(&PathBuf::from("./libraries/test-protocol/target/debug/test_protocol.dll"))?;
 
-    // Get the schema URLs from the files. By default, create-protocols-plugin generates these in a file we can pull from :)
-    let test_schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
-   
-    // Create a GenerateMessageInfo structure and pass on to a function call
-    let mut generation = GenerateMessageInfo::default();
-    generation.args = RepeatedField::from_vec(vec![b"Test Name".to_vec(), b"Test Data".to_vec()]);
-    generation.template = test_schema.to_string();
-
     // Create a schema so the handler knows what module to call.
+    let test_schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
     let mut schema = Schema::new();
     schema.set_Ipfs(test_schema.to_string());
 
+    // Create a GenerateMessageInfo structure and pass on to a function call
+    let mut generation = GenerateMessageInfo::default();
+    generation.args = RepeatedField::from_vec(vec![b"Test Name".to_vec(), b"Test Data".to_vec()]);
+    generation.set_template("Test".to_string());
+    generation.set_schema(schema);
+
     // Propogate through the handler tree to find a module matching the schema, and pass the generation info to it.
-    let test_data = handler.generate_default_message(schema, generation)?;
+    let test_data = handler.generate_message(generation)?;
 
     // Send to localhost. Use the receiver binary to receive this data.
     println!("Sending: {:?}", test_data);

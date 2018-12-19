@@ -5,11 +5,12 @@ use std::path::PathBuf;
 use failure::Error;
 use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
 use signals::{Signal, Emitter, Am};
+use protobuf::Message;
 
-use crate::transmission_interface::transmission::Error as TError;
-use crate::transmission_interface::transmission::{self, Schema, Transmission, Data, DataType, VecTransmission};
-use crate::transmission_interface::temp_transmission_rpc::ModuleToTransportationGlue;
-use crate::transport::Propagator;
+use crate::transport_autogen::transport::{self, Transport};
+use crate::transport_autogen::transport_glue::ModuleToTransportGlue;
+use crate::core::{Propagator, TransportNode};
+use crate::transportresponse::TransportResponse;
 
 //#[derive(Default)]
 pub struct PluginHandler {
@@ -29,17 +30,17 @@ impl DynamicLibraryLoader for PluginHandler {
 }
 
 trait CommonFFI {
-    fn call_ffi_propagate(&self, transmission: &Transmission) -> Result<Vec<Transmission>, Error>;
+    fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error>;
 }
 
 impl CommonFFI for libloading::Library {
     // TODO: Handle c-style ffi
-    fn call_ffi_propagate(&self, transmission: &Transmission) -> Result<Vec<Transmission>, Error> {
+    fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
         use protobuf::Message;
 
         println!("Calling FFI function 'propagate_ffi(...)'");
 
-        let bytes = transmission.write_to_bytes()?;
+        let bytes = transport.write_to_bytes()?;
 
         let from_ffi = unsafe {
             let propagate: libloading::Symbol<unsafe extern fn(&[u8]) -> Vec<u8>> = self.get(b"propagate_ffi")?;
@@ -47,67 +48,46 @@ impl CommonFFI for libloading::Library {
             propagate(&bytes)
         };
 
-        let ret: transmission::VecTransmission = protobuf::parse_from_bytes(&from_ffi)?;
+        let ret: transport::VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
         Ok(ret.vec.into_vec())
     }
 }
 
-pub trait ToDataConverter: protobuf::Message {
-    fn to_data(&self, schema: &Schema) -> Result<Data, Error> {
-        let serialized_data = self.write_to_bytes()?;
+pub fn ffi_handle_received_bytes(node: &TransportNode, bytes: &[u8]) -> Vec<u8> {
+    let mut ret = transport::VecTransport::new();
 
-        let mut ret = Data::new();
-        ret.set_decode_schema(schema.clone());
-        ret.set_serialized_data(serialized_data);
-        Ok(ret)
+    match protobuf::parse_from_bytes(bytes) {
+        Err(e) => {
+            let transport = TransportResponse::create_Error(&format!("Cannot parse data! Possibly incorrect version. {:?}", e));
+            ret.vec.push(transport);
+        },
+        Ok(transport) => {
+            let vectransport_data = node.propagate_transport(&transport);
+            ret.vec = protobuf::RepeatedField::from_vec(vectransport_data);
+        },
+    } 
+
+    // write_to_bytes returns a result - one that we cannot pass back. Fail as gracefully as we can :(
+    match ret.write_to_bytes() {
+        Ok(bytes) => bytes.to_vec(),
+        Err(e) => {
+            println!("Cannot write VecTransport to bytes! {:?}", e);
+            Vec::new() // Return NOTHING :( TODO: Write test case for this.
+        }
     }
-}
-
-pub fn schema_ipfs_from_str(schema_str: &str) -> Schema {
-    let mut schema = Schema::new();
-    schema.set_Ipfs(schema_str.to_string());
-    schema
-}
-
-pub fn from_data<T: protobuf::Message>(data: &Data) -> Result<(Schema, T), Error> {
-    let schema = data.get_decode_schema();
-    let serialized_data = data.get_serialized_data();
-    Ok((schema.to_owned(), protobuf::parse_from_bytes(serialized_data)?))
-}
-
-pub fn create_error_transmission(error: &str) -> Transmission {
-    let mut ret = Transmission::new();
-    let mut data_type = DataType::new();
-    let mut t_error = TError::new();
-    t_error.set_error(error.to_string());
-    data_type.set_error(t_error);
-    ret.set_payload(data_type);
-    ret
-}
-
-pub fn parse_data_as_transmission(data: &[u8]) -> Result<Transmission, Error> {
-    Ok(protobuf::parse_from_bytes(&data)?)
-}
-
-pub fn to_vectransmission(vec_transmission: Vec<Transmission>) -> VecTransmission {
-    let mut ret = VecTransmission::new();
-    for t in vec_transmission {
-        ret.vec.push(t);
-    }
-    ret
 }
 
 /// Allow us to use CommonModule functions on the PluginHandler
-impl ModuleToTransportationGlue for PluginHandler {}
+impl ModuleToTransportGlue for PluginHandler {}
 
 /// We want to propagate over any dynamic library
 impl Propagator for PluginHandler {
-    fn propagate_transmission(&self, transmission: &Transmission) -> Vec<Transmission> {
+    fn propagate_transport(&self, transport: &Transport) -> Vec<Transport> {
         let mut ret = Vec::new();
         let libraries = self.libraries.lock();
         for lib in libraries.iter() {
-            match lib.call_ffi_propagate(transmission) {
-                Ok(mut transmissions) => ret.append(&mut transmissions),
+            match lib.call_ffi_propagate(transport) {
+                Ok(mut transports) => ret.append(&mut transports),
                 Err(e) => println!("Error when propagating over dynamic library! {:?}", e),
             }
         }
@@ -116,43 +96,8 @@ impl Propagator for PluginHandler {
 }
 
 
-/*pub type CommonModuleHashMapValue = Am<CommonModule+Send>;
-type CommonModuleHashMap = HashMap<String, CommonModuleHashMapValue>; 
 
-pub struct PluginHandler {
-    map: Am<CommonModuleHashMap>,
-}
-
-/// When we use the plugin directly, dereference to the hashmap
-impl Deref for PluginHandler {
-    type Target = Am<CommonModuleHashMap>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.map
-    }
-}
-
-impl Clone for PluginHandler {
-    fn clone(&self) -> PluginHandler { 
-        PluginHandler { map: self.map.clone() }
-    }
-}*/
-
-/*impl PluginHandler {
-    /// Create a new PluginHandler
-    pub fn new() -> Self {
-        PluginHandler {
-            map: Arc::new(Mutex::new(HashMap::new())),
-        }
-    }
-
-    pub fn get_plugin(&self, schema: &str) -> Result<CommonModuleHashMapValue, Error> {
-        let err = format_err!("Schema {} does not exist!", schema);
-        let map = self.map.lock().unwrap();
-        let plugin = map.get(schema).ok_or(err)?;
-        Ok(plugin.clone())
-    }
-
+/*
     /// Get the library from the map, and handle results as trusted
     pub fn handle_trusted_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
         println!("Handle trusted message {:?}", info);

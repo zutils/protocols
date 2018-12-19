@@ -18,7 +18,7 @@ message Error { string error = 1; }
 
 // Include data and the schema that can decode it.
 message Data {
-    Schema decode_schema = 1;
+    Schema schema = 1;
     bytes serialized_data = 2;
 }
 
@@ -26,6 +26,7 @@ message Data {
 message RpcData {
     string method_name = 1;
     bytes serialized_rpc_data = 2;
+    Schema schema = 3;
 }
 
 message ModuleInfo {
@@ -36,17 +37,22 @@ message ModuleInfo {
 message GenerateMessageInfo {
     string template = 1;
     repeated bytes args = 2;
+    Schema schema = 3;
+}
+
+// Special case for functions that would normally take Destination
+message Destination {
+    Schema schema = 1;
 }
 
 message VecData { repeated Data vec = 1; }
 message VecModuleInfo { repeated ModuleInfo vec = 1; }
 message VecRpcData { repeated RpcData vec = 1; }
-message Empty {}
 
 enum RequestType {
     NONE = 0;
     GET_INFO = 1;
-    GENERATE_DEFAULT_MESSAGE = 2;
+    GENERATE_MESSAGE = 2;
     HANDLE_TRUSTED = 3;
     RECEIVE_TRUSTED_RPC = 4;
     RECEIVE_UNTRUSTED_RPC = 5;
@@ -61,33 +67,25 @@ message DataType {
         VecModuleInfo vecmoduleinfo = 3;
         RpcData rpcdata = 4;
         GenerateMessageInfo generatemessageinfo = 5;
-        Empty empty = 6;
+        Destination destination = 6;
         VecData vecdata= 7;
-        VecRpcData vecdatarpc = 8;
+        VecRpcData vecrpcdata = 8;
     }
 }
 
-// Any module that wants to communicate to another module in it's tree must send and receive "Transmissions"
-message Transmission {
+// Any module that wants to communicate to another module in it's tree must send and receive "Transports"
+message Transport {
     Schema destination = 1;
     DataType payload = 2;
     RequestType request_type = 3;
 }
 
-message VecTransmission { repeated Transmission vec = 1; }
+message VecTransport { repeated Transport vec = 1; }
 
 service CommonModule {
-    rpc get_info(Empty) returns (VecModuleInfo);
-    rpc generate_default_message(GenerateMessageInfo) returns (Data);
+    rpc get_info(Destination) returns (VecModuleInfo);
+    rpc generate_message(GenerateMessageInfo) returns (Data);
     rpc handle_trusted(Data) returns (VecData);
     rpc receive_trusted_rpc(RpcData) returns (VecRpcData);
     rpc receive_untrusted_rpc(RpcData) returns (VecRpcData);
-}
-
-service TransportService {
-    rpc get_info(Transmission) returns (Transmission);
-    rpc generate_default_message(Transmission) returns (Transmission);
-    rpc handle_trusted(Transmission) returns (Transmission);
-    rpc receive_trusted_rpc(Transmission) returns (Transmission);
-    rpc receive_untrusted_rpc(Transmission) returns (Transmission);
 }
