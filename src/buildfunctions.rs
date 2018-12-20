@@ -68,7 +68,7 @@ pub fn build_rust_rpc_code_from_protobuffer(proto_filename: &PathBuf) -> Result<
 
 /// Adds the file to IPFS so that 1) we can get it's hash and 2) So that we can generate a schema url from that hash
 /// In parent program, lib.rs loads in the schema_link at compile time so that the library can use it.
-pub fn add_file_and_write_ipfs_hash(path: &PathBuf) -> Result<String, Error> {
+pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
 	use hyper::rt::Future;
 	use std::sync::{Arc, Mutex};
 	let client = ipfs_api::IpfsClient::default();
@@ -99,11 +99,15 @@ pub fn add_file_and_write_ipfs_hash(path: &PathBuf) -> Result<String, Error> {
 		panic!(r#"Unable to retrieve schema URL from ipfs. Make sure that IPFS daemon is running! You can get IPFS from ipfs.io\nIf you REALLY don't want to use ipfs, and care to handle the schema_link manually, modify your build.rs file."#);
 	}
 
-	let schema_link_file_location = format!("./schema_urls/{}.txt", base_name(path));
 	let hash = hash.lock().unwrap().clone();
-	write_to_file(&PathBuf::from(schema_link_file_location), &hash)?;
-
     Ok(hash)
+}
+
+pub fn write_schema_url(schema_path: &PathBuf, schema_url: &str) -> Result<PathBuf, Error> {
+	let schema_link_path = format!("./schema_urls/{}.txt", base_name(schema_path));
+	let schema_link_path = PathBuf::from(schema_link_path);
+	write_to_file(&schema_link_path, &schema_url)?;
+	Ok(schema_link_path)
 }
 
 pub fn modify_file(path: &PathBuf, pretext: &str, posttext: &str) -> Result<(), Error> {
