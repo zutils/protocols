@@ -923,7 +923,7 @@ impl ::protobuf::reflect::ProtobufValue for Data {
 pub struct RpcData {
     // message fields
     pub method_name: ::std::string::String,
-    pub serialized_rpc_data: ::std::vec::Vec<u8>,
+    pub serialized_rpc_arg: ::std::vec::Vec<u8>,
     pub schema: ::protobuf::SingularPtrField<Schema>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
@@ -963,30 +963,30 @@ impl RpcData {
         &self.method_name
     }
 
-    // bytes serialized_rpc_data = 2;
+    // bytes serialized_rpc_arg = 2;
 
-    pub fn clear_serialized_rpc_data(&mut self) {
-        self.serialized_rpc_data.clear();
+    pub fn clear_serialized_rpc_arg(&mut self) {
+        self.serialized_rpc_arg.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_serialized_rpc_data(&mut self, v: ::std::vec::Vec<u8>) {
-        self.serialized_rpc_data = v;
+    pub fn set_serialized_rpc_arg(&mut self, v: ::std::vec::Vec<u8>) {
+        self.serialized_rpc_arg = v;
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_serialized_rpc_data(&mut self) -> &mut ::std::vec::Vec<u8> {
-        &mut self.serialized_rpc_data
+    pub fn mut_serialized_rpc_arg(&mut self) -> &mut ::std::vec::Vec<u8> {
+        &mut self.serialized_rpc_arg
     }
 
     // Take field
-    pub fn take_serialized_rpc_data(&mut self) -> ::std::vec::Vec<u8> {
-        ::std::mem::replace(&mut self.serialized_rpc_data, ::std::vec::Vec::new())
+    pub fn take_serialized_rpc_arg(&mut self) -> ::std::vec::Vec<u8> {
+        ::std::mem::replace(&mut self.serialized_rpc_arg, ::std::vec::Vec::new())
     }
 
-    pub fn get_serialized_rpc_data(&self) -> &[u8] {
-        &self.serialized_rpc_data
+    pub fn get_serialized_rpc_arg(&self) -> &[u8] {
+        &self.serialized_rpc_arg
     }
 
     // .Schema schema = 3;
@@ -1041,7 +1041,7 @@ impl ::protobuf::Message for RpcData {
                     ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.method_name)?;
                 },
                 2 => {
-                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.serialized_rpc_data)?;
+                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.serialized_rpc_arg)?;
                 },
                 3 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.schema)?;
@@ -1061,8 +1061,8 @@ impl ::protobuf::Message for RpcData {
         if !self.method_name.is_empty() {
             my_size += ::protobuf::rt::string_size(1, &self.method_name);
         }
-        if !self.serialized_rpc_data.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(2, &self.serialized_rpc_data);
+        if !self.serialized_rpc_arg.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(2, &self.serialized_rpc_arg);
         }
         if let Some(ref v) = self.schema.as_ref() {
             let len = v.compute_size();
@@ -1077,8 +1077,8 @@ impl ::protobuf::Message for RpcData {
         if !self.method_name.is_empty() {
             os.write_string(1, &self.method_name)?;
         }
-        if !self.serialized_rpc_data.is_empty() {
-            os.write_bytes(2, &self.serialized_rpc_data)?;
+        if !self.serialized_rpc_arg.is_empty() {
+            os.write_bytes(2, &self.serialized_rpc_arg)?;
         }
         if let Some(ref v) = self.schema.as_ref() {
             os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
@@ -1133,9 +1133,9 @@ impl ::protobuf::Message for RpcData {
                     |m: &mut RpcData| { &mut m.method_name },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "serialized_rpc_data",
-                    |m: &RpcData| { &m.serialized_rpc_data },
-                    |m: &mut RpcData| { &mut m.serialized_rpc_data },
+                    "serialized_rpc_arg",
+                    |m: &RpcData| { &m.serialized_rpc_arg },
+                    |m: &mut RpcData| { &mut m.serialized_rpc_arg },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Schema>>(
                     "schema",
@@ -1165,7 +1165,7 @@ impl ::protobuf::Message for RpcData {
 impl ::protobuf::Clear for RpcData {
     fn clear(&mut self) {
         self.clear_method_name();
-        self.clear_serialized_rpc_data();
+        self.clear_serialized_rpc_arg();
         self.clear_schema();
         self.unknown_fields.clear();
     }
@@ -3633,9 +3633,9 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x04UUID\x12\x0e\n\x02id\x18\x01\x20\x01(\tB\x02\x18\0\"\x1a\n\x05Erro\
     r\x12\x11\n\x05error\x18\x01\x20\x01(\tB\x02\x18\0\"@\n\x04Data\x12\x1b\
     \n\x06schema\x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x1b\n\x0fse\
-    rialized_data\x18\x02\x20\x01(\x0cB\x02\x18\0\"`\n\x07RpcData\x12\x17\n\
-    \x0bmethod_name\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1f\n\x13serialized_rp\
-    c_data\x18\x02\x20\x01(\x0cB\x02\x18\0\x12\x1b\n\x06schema\x18\x03\x20\
+    rialized_data\x18\x02\x20\x01(\x0cB\x02\x18\0\"_\n\x07RpcData\x12\x17\n\
+    \x0bmethod_name\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1e\n\x12serialized_rp\
+    c_arg\x18\x02\x20\x01(\x0cB\x02\x18\0\x12\x1b\n\x06schema\x18\x03\x20\
     \x01(\x0b2\x07.SchemaB\x02\x18\0\";\n\nModuleInfo\x12\x1b\n\x06schema\
     \x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x10\n\x04name\x18\x02\
     \x20\x01(\tB\x02\x18\0\"Z\n\x13GenerateMessageInfo\x12\x14\n\x08template\

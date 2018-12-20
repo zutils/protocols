@@ -4,7 +4,7 @@
 use super::transport::{DataType, Destination, RequestType, RpcData, Transport, VecModuleInfo, 
     VecData, Data, VecRpcData, GenerateMessageInfo, DataType_oneof_result};
 
-use crate::core::Propagator;
+use crate::propagator::Propagator;
 use crate::common::CommonModule;
 use crate::transportresponse::{TransportResponse, TransportCombiner};
 

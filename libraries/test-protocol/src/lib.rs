@@ -1,13 +1,10 @@
-//#[macro_use] extern crate serde_derive;
-
 use lazy_static::lazy_static;
-use protocols::core::TransportNode;
+use protocols::propagator::TransportNode;
 
 pub mod test_interface;
 pub mod test_autogen;
 // __PUBMODPROTOCOLS__ Do not remove this line. This line is used to add new protocols.
 
-// Warning! I am using unwrap here. The module will crash with unwrap() if an error is returned.
 lazy_static! {
     static ref NODE: TransportNode = {
         let mut m = TransportNode::default();

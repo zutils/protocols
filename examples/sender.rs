@@ -2,9 +2,7 @@ use std::net::UdpSocket;
 use std::path::PathBuf;
 
 use protocols::pluginhandler::{PluginHandler, DynamicLibraryLoader};
-use protocols::transport_autogen::transport::{GenerateMessageInfo, Schema};
-use protocols::transport_autogen::transport_glue::ModuleToTransportGlue;
-//use protocols::core;
+use protocols::{GenerateMessageInfo, Schema, ModuleToTransportGlue};
 
 fn main() -> Result<(), failure::Error> {
     use rand::Rng;

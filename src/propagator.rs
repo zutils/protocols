@@ -1,6 +1,5 @@
 use crate::transportresponse::TransportResponse;
-use crate::transport_autogen::transport::{Transport, Destination};
-use crate::transport_autogen::transport_glue::{TransportToModuleGlue, ModuleToTransportGlue};
+use crate::{Transport, Destination, TransportToModuleGlue, ModuleToTransportGlue};
 use crate::common::CommonModule;
 
 use std::collections::HashMap;

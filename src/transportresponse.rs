@@ -2,8 +2,8 @@
 #![allow(non_snake_case)]
 
 use crate::transport_autogen::transport::Error as TError;
-use crate::transport_autogen::transport::{Transport, DataType_oneof_result, Data, DataType, RpcData,
-    ModuleInfo, VecModuleInfo, VecData, VecRpcData};
+use crate::{Transport, Data, RpcData, ModuleInfo, VecModuleInfo, VecData, VecRpcData};
+use crate::transport_autogen::transport::{DataType_oneof_result, DataType};
 
 use failure::Error;
 

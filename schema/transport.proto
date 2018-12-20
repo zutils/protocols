@@ -25,7 +25,7 @@ message Data {
 // Include the method name and the serialized gRPC data.
 message RpcData {
     string method_name = 1;
-    bytes serialized_rpc_data = 2;
+    bytes serialized_rpc_arg = 2;
     Schema schema = 3;
 }
 

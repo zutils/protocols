@@ -1,4 +1,4 @@
-use crate::transport_autogen::transport::{Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData, GenerateMessageInfo};
+use crate::{Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData, GenerateMessageInfo};
 use failure::Error;
 
 pub trait CommonModule {

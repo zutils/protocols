@@ -2,8 +2,7 @@ use std::net::UdpSocket;
 use std::path::PathBuf;
 
 use protocols::pluginhandler::{PluginHandler, DynamicLibraryLoader};
-use protocols::transport_autogen::transport_glue::ModuleToTransportGlue;
-use protocols::transport_autogen::transport::{Data};
+use protocols::{Data, ModuleToTransportGlue};
 
 fn main() -> Result<(), failure::Error> {
     // Initialize plugin handler. The PluginHandler is ALSO our module root.

@@ -7,9 +7,8 @@ use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
 use signals::{Signal, Emitter, Am};
 use protobuf::Message;
 
-use crate::transport_autogen::transport::{self, Transport};
-use crate::transport_autogen::transport_glue::ModuleToTransportGlue;
-use crate::core::{Propagator, TransportNode};
+use crate::{Transport, VecTransport, ModuleToTransportGlue};
+use crate::propagator::{Propagator, TransportNode};
 use crate::transportresponse::TransportResponse;
 
 //#[derive(Default)]
@@ -48,13 +47,13 @@ impl CommonFFI for libloading::Library {
             propagate(&bytes)
         };
 
-        let ret: transport::VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
+        let ret: VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
         Ok(ret.vec.into_vec())
     }
 }
 
 pub fn ffi_handle_received_bytes(node: &TransportNode, bytes: &[u8]) -> Vec<u8> {
-    let mut ret = transport::VecTransport::new();
+    let mut ret = VecTransport::new();
 
     match protobuf::parse_from_bytes(bytes) {
         Err(e) => {

@@ -1,7 +1,6 @@
 use crate::test_autogen::test;
 use failure::Error;
-use protocols::transport_autogen::transport::{Data, ModuleInfo, VecModuleInfo, VecData, Destination, GenerateMessageInfo, VecRpcData, RpcData};
-use protocols::common::CommonModule;
+use protocols::{CommonModule, Data, ModuleInfo, VecModuleInfo, VecData, Destination, GenerateMessageInfo, VecRpcData, RpcData};
 use protocols::utils::{ToDataConverter, FromDataConverter, schema_ipfs_from_str};
 
 static SCHEMA_URL: &str = include_str!("../schema_urls/test.txt");
