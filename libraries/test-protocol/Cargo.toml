@@ -6,16 +6,13 @@ edition = "2018"
 
 [dependencies]
 protobuf = "*"
-#serde = "*"
-#serde_json = "*"
-#serde_derive = "*"
 failure = "*"
 lazy_static = "*"
-protocols = { path = "../../" }
+protocols = { path = "../../../protocols/" }
 
 [build-dependencies]
 failure = "*"
-protocols = { path = "../../" }
+protocols = { path = "../../../protocols" }
 
 [lib]
 crate-type = ["dylib"]
