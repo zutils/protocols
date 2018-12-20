@@ -31,7 +31,7 @@ impl CommonModule for TestInterface {
                 let msg = generate_test(name, data)?;
                 Ok(msg.to_Data(&schema_ipfs_from_str(SCHEMA_URL))?)
             },
-            _ => Err(failure::format_err!("Unrecognized template {:?}. 'Root' available.", template)),
+            _ => Err(failure::format_err!("Unrecognized template {:?}. 'Test' available.", template)),
         }
     }
 
