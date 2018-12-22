@@ -7,7 +7,7 @@ use std::collections::HashMap;
 #[derive(Default)]
 /// If we want to be able to have multiple modules per plugin, we use this.
 pub struct TransportNode {
-    nodes: Vec<TransportNode>,
+    nodes: Vec<Box<Propagator>>,
     modules: HashMap<String, Box<TransportToModuleGlue + Sync>>, // String is schema_url of some type... using Schema gave me errors.
 }
 
@@ -27,8 +27,8 @@ impl TransportNode {
         }
     }
 
-    pub fn add_node(&mut self, node: TransportNode) {
-        self.nodes.push(node);
+    pub fn add_node<T: 'static + Propagator>(&mut self, node: T) {
+        self.nodes.push(Box::new(node));
     }
 
     pub fn handle_appropriate_modules(&self, transport: &Transport) -> Vec<Transport> {
