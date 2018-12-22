@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
 use crate::transport_autogen::transport::{ Schema, Schema_oneof_data, Data};
-use crate::common::CommonModule;
 
 use failure::Error;
 
@@ -31,7 +30,7 @@ pub trait ToDataConverter: protobuf::Message {
     }
 }
 
-impl<T> ToDataConverter for T where T: CommonModule + protobuf::Message {}
+impl<T> ToDataConverter for T where T: protobuf::Message {}
 
 pub fn schema_ipfs_from_str(schema_str: &str) -> Schema {
     let mut schema = Schema::new();
@@ -49,10 +48,4 @@ impl FromDataConverter for Data {
         let serialized_data = self.get_serialized_data();
         Ok((schema.to_owned(), protobuf::parse_from_bytes(serialized_data)?))
     }
-}
-
-pub fn from_data<T: protobuf::Message>(data: &Data) -> Result<(Schema, T), Error> {
-    let schema = data.get_schema();
-    let serialized_data = data.get_serialized_data();
-    Ok((schema.to_owned(), protobuf::parse_from_bytes(serialized_data)?))
 }
