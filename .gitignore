@@ -4,3 +4,4 @@ libraries/test-protocol/target
 libraries/root-message/target
 Cargo.lock
 builder/target
+.vscode/
