@@ -71,12 +71,14 @@ pub trait TransportToModuleGlue: CommonModule {
 /// This is glue to package up requests into Transports and unpacking them.
 pub trait ModuleToTransportGlue: Propagator {
     fn get_info(&self, data: Destination) -> Result<VecModuleInfo, Error> {
+        println!("Propagating get_info()");
         let transport = TransportRequest::create_GET_INFO(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecModuleInfo(transport_results)
     }
 
     fn generate_message(&self, data: GenerateMessageInfo) -> Result<Data, Error> { 
+        println!("Propagating generate_message()");
         let transport = TransportRequest::create_GENERATE_MESSAGE(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_Data(transport_results)
@@ -84,18 +86,21 @@ pub trait ModuleToTransportGlue: Propagator {
 
     // handle of straight data is special because the data message contains the receiver.
     fn handle_trusted(&self, data: Data) -> Result<VecData, Error> { 
+        println!("Propagating handle_trusted()");
         let transport = TransportRequest::create_HANDLE_TRUSTED(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecData(transport_results)
     }
 
     fn receive_trusted_rpc(&self, data: RpcData) -> Result<VecRpcData, Error> {
+        println!("Propagating receive_trusted_rpc()");
         let transport = TransportRequest::create_RECEIVE_TRUSTED_RPC(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecRpcData(transport_results)
     }
 
     fn receive_untrusted_rpc(&self, data: RpcData) -> Result<VecRpcData, Error> {
+        println!("Propagating receive_untrusted_rpc()");
         let transport = TransportRequest::create_RECEIVE_UNTRUSTED_RPC(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecRpcData(transport_results)
