@@ -37,17 +37,17 @@ impl CommonFFI for libloading::Library {
     fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
         use protobuf::Message;
 
-        println!("Calling FFI function 'propagate_ffi(...)'");
+        log::debug!("Calling FFI function 'propagate_ffi(...)'");
 
         let bytes = transport.write_to_bytes()?;
 
         let from_ffi = unsafe {
             let propagate: libloading::Symbol<unsafe extern fn(&[u8]) -> Vec<u8>> = self.get(b"propagate_ffi")?;
-                    //.expect("propagate_ffi([u8]) function not found in library!"));
             propagate(&bytes)
         };
 
         let ret: VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
+        log::trace!("Received from FFI: {:?}", ret);
         Ok(ret.vec.into_vec())
     }
 }
@@ -70,7 +70,7 @@ pub fn ffi_handle_received_bytes(node: &TransportNode, bytes: &[u8]) -> Vec<u8> 
     match ret.write_to_bytes() {
         Ok(bytes) => bytes.to_vec(),
         Err(e) => {
-            println!("Cannot write VecTransport to bytes! {:?}", e);
+            log::error!("Cannot write VecTransport to bytes! {:?}", e);
             Vec::new() // Return NOTHING :( TODO: Write test case for this.
         }
     }
@@ -87,7 +87,7 @@ impl Propagator for PluginHandler {
         for lib in libraries.iter() {
             match lib.call_ffi_propagate(transport) {
                 Ok(mut transports) => ret.append(&mut transports),
-                Err(e) => println!("Error when propagating over dynamic library! {:?}", e),
+                Err(e) => log::error!("Error when propagating over dynamic library! {:?}", e),
             }
         }
         ret
@@ -99,7 +99,7 @@ impl Propagator for PluginHandler {
 /*
     /// Get the library from the map, and handle results as trusted
     pub fn handle_trusted_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
-        println!("Handle trusted message {:?}", info);
+        log::debug!("Handle trusted message {:?}", info);
         let self_clone = self.clone();
         let plugin = self.get_plugin(&info.schema_link)?;
 
@@ -114,7 +114,7 @@ impl Propagator for PluginHandler {
         ::std::thread::spawn(move || {
             for msg in additional_messages.into_iter() {
                 if let Err(e) = self_clone.handle_trusted_msg_and_submsgs(msg) {
-                    println!("{:?}", e);
+                    log::debug!("{:?}", e);
                 }
             }
         });
@@ -123,7 +123,7 @@ impl Propagator for PluginHandler {
 
     /// Get the library from the map, and handle results as untrusted
     pub fn handle_untrusted_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
-        println!("Handle untrusted message {:?}", info);
+        log::debug!("Handle untrusted message {:?}", info);
         let self_clone = self.clone();
         let plugin = self.get_plugin(&info.schema_link)?;
 
@@ -131,14 +131,14 @@ impl Propagator for PluginHandler {
         let method_name = info.rpc_method_name.clone();
         let additional_messages = match method_name {
             Some(_method_name) => plugin.lock().unwrap().receive_untrusted_rpc(info)?,
-            None => { println!("Cannot handle untrusted messages! Only Rpc!"); Vec::new() },
+            None => { log::debug!("Cannot handle untrusted messages! Only Rpc!"); Vec::new() },
         };
 
         // We want results to be handled non-blocking and iteratively.
         ::std::thread::spawn(move || {
             for msg in additional_messages.into_iter() {
                 if let Err(e) = self_clone.handle_untrusted_msg_and_submsgs(msg) {
-                    println!("{:?}", e);
+                    log::debug!("{:?}", e);
                 }
             }
         });
@@ -176,7 +176,7 @@ pub trait DynamicLibraryLoader {
 
         ::std::thread::spawn(move || {           
             if let Err(e) = blocking_watch_directory(watch_path, emitter ){
-                println!("{:?}", e);
+                log::error!("{:?}", e);
             }
         });
     }
@@ -191,15 +191,15 @@ pub trait DynamicLibraryLoader {
 /// So that you can load different plugins while the application is running.
 fn load_plugin(path: &PathBuf) -> Result<libloading::Library, Error> {
     let path_str = path.to_str().ok_or(failure::format_err!("Cannot convert to string"))?;
-    println!("Current Dir: {:?}", std::env::current_dir()?);
-    println!("Loading {}", path_str);
+    log::debug!("Current Dir: {:?}", std::env::current_dir()?);
+    log::info!("Loading {}", path_str);
 
     if !path.exists() {
-        println!("Path {:?} does not exist!", path);
+        log::warn!("Path {:?} does not exist!", path);
     }
 
     let library = libloading::Library::new(path)?;
-    println!("{:?} loaded successfully.", path);
+    log::info!("{:?} loaded successfully.", path);
     Ok(library)
 }
 
@@ -217,11 +217,11 @@ fn blocking_watch_directory<E>(watch_path: PathBuf, on_path_changed: Am<E>) -> R
     loop {
         match receive.recv() {
             Ok(RawEvent{path: Some(path), op: Ok(op), cookie}) => {
-                println!("Raw Event: {:?} {:?} {:?}", op, path, cookie);
+                log::debug!("Raw Event: {:?} {:?} {:?}", op, path, cookie);
                 on_path_changed.lock().emit(path);
             },
-            Ok(event) => println!("Broken Directory Watcher Event: {:?}", event),
-            Err(e) => println!("Directory Watcher Error: {:?}", e),
+            Ok(event) => log::error!("Broken Directory Watcher Event: {:?}", event),
+            Err(e) => log::error!("Directory Watcher Error: {:?}", e),
         }
     }
 }

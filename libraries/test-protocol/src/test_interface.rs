@@ -7,8 +7,6 @@ static SCHEMA_URL: &str = include_str!("../schema_urls/test.txt");
 
 pub struct TestInterface;
 
-impl ToDataConverter for test::Test {}
-
 impl CommonModule for TestInterface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, Error> {
         let mut info = ModuleInfo::new();
@@ -37,7 +35,7 @@ impl CommonModule for TestInterface {
 
     fn handle_trusted(&self, data: &Data) -> Result<VecData, Error> {
         let (schema, test) = data.unwrap::<test::Test>()?;
-        println!("Received Test Message: ({:?},{:?})", schema, test);
+        log::debug!("Received Test Message: ({:?},{:?})", schema, test);
 
         let ret = VecData::new();
         Ok(ret)

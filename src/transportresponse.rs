@@ -35,7 +35,7 @@ impl TransportCombiner {
 
         let _unused: Vec<_> = errors.into_iter()
             .map(|mut payload| payload.take_error().error )
-            .inspect(|e| println!("Error from transport! {:?}", e))
+            .inspect(|e| log::debug!("Error from transport! {:?}", e))
             .collect();
 
         results            
@@ -64,7 +64,7 @@ impl TransportCombiner {
             .collect();
 
         if infos.len() > 1 {
-            println!("combine_to_Data(...) has more than one result! Returning first one.")
+            log::debug!("combine_to_Data(...) has more than one result! Returning first one.")
         } 
 
         let item = infos.pop().ok_or(failure::format_err!("No response for data request!"))?;
