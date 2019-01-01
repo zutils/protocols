@@ -11,7 +11,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Initialize plugin handler. The PluginHandler is ALSO our module root.
     let handler = PluginHandler::new();
-    handler.load_plugin(&PathBuf::from("./libraries/test-protocol/target/debug/test_protocol.dll"))?;
+    handler.load_plugin(&PathBuf::from("./libraries/test-protocol/target/release/test_protocol.dll"))?;
     
     // Receive a message from the sender crate.
     let socket = UdpSocket::bind("127.0.0.1:23462")?; // I chose a random port #

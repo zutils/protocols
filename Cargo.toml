@@ -12,26 +12,28 @@ build = "./src/build.rs"
 edition = "2018"
 
 [dependencies]
-failure = "0.1.3"
+failure = "0.1.4"
 signals = "0.0.5"
 libloading = "0.5"
 notify = "4.0.6"
 glob = "0.2"
-protobuf = "2.2.0"
-protobuf-codegen = "2.2.0"
-protobuf-codegen-pure = "2.2.0"
+protobuf = "2.2.2"
+protobuf-codegen = "2.2.2"
+protobuf-codegen-pure = "2.2.2"
 protoc-rust-grpc = "0.6.1"
-pb-rs = "0.7.0"
 ipfs-api = "0.5.0-alpha2"
-hyper = "0.12.18"
+hyper = "0.12.19"
 rand = "0.6.1"
+log = "0.4.6"
+pretty_env_logger = "0.3.0"
 
 [build-dependencies]
-failure = "0.1.3"
+failure = "0.1.4"
 protoc-rust-grpc = "0.6.1"
-protobuf-codegen-pure = "2.2.0"
-hyper = "0.12.18"
+protobuf-codegen-pure = "2.2.2"
+hyper = "0.12.10"
 ipfs-api = "0.5.0-alpha2"
+log = "0.4.6"
 
 [badges]
 travis-ci = { repository = "zutils/protocols" }

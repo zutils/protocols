@@ -10,7 +10,6 @@ failure = "*"
 lazy_static = "*"
 protocols = { path = "../../../protocols/" }
 log = "*"
-pretty_env_logger = "*"
 
 [build-dependencies]
 failure = "*"

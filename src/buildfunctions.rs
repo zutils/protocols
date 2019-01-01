@@ -5,17 +5,6 @@ use failure::Error;
 use std::fs::File;	
 use std::path::PathBuf;
 
-/*
-This comment is a placeholder to autogenerate transport_glue from a service
-service CommonModule {
-    rpc get_info(Destination) returns (VecModuleInfo);
-    rpc generate_message(GenerateMessageInfo) returns (Data);
-    rpc handle_trusted(Data) returns (VecData);
-    rpc receive_trusted_rpc(RpcData) returns (VecRpcData);
-    rpc receive_untrusted_rpc(RpcData) returns (VecRpcData);
-}
-*/
-
 /// Call protoc on protobuffer and create non-rpc code
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
 	println!("Building protobuf for {:?}", &proto_filename);
