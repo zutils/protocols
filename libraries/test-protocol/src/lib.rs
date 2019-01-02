@@ -14,15 +14,13 @@ lazy_static! {
     };
 }
 
-fn initialize_logging() {
-    std::env::set_var("RUST_LOG", "trace");
-    pretty_env_logger::init();
-    log::debug!("Logging initialized!");
-}
-
 #[no_mangle]
 pub extern fn init() {
-    initialize_logging();
+    log::trace!("Inside dynamic library init().");
+    if let Err(e) = protocols::utils::initialize_standard_logging("TEST-PROTOCOL|\t") {
+        println!("{:?}", e); // What are we going to do - log it? lol
+    }
+    log::trace!("Leaving dynamic library init()...");
 }
 
 #[no_mangle]
