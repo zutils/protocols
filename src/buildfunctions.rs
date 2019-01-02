@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 /// Call protoc on protobuffer and create non-rpc code
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
-	println!("Building protobuf for {:?}", &proto_filename);
+	log::info!("Building protobuf for {:?}", &proto_filename);
 
 	let path_str = proto_filename.to_str().ok_or(failure::format_err!("Cannot create str from PathBuf!"))?;
 
@@ -27,14 +27,14 @@ pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<Path
 	pcp::run(args).expect("protoc");
 
 	let out_file = get_protobuf_generated_file(proto_filename);
-	println!("Protoc ran on {:?} and created {:?}", proto_filename, out_file);
+	log::info!("Protoc ran on {:?} and created {:?}", proto_filename, out_file);
 
 	Ok(out_file)
 }
 
 /// Call protoc on protobuffer and create only the rpc code
 pub fn build_rust_rpc_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
-	println!("Building protobuf rpc for {:?}", &proto_filename);
+	log::info!("Building protobuf rpc for {:?}", &proto_filename);
 	let path_str = proto_filename.to_str().ok_or(failure::format_err!("Cannot create str from PathBuf!"))?;
 
 	let out_dir = out_dir(&proto_filename);
@@ -50,7 +50,7 @@ pub fn build_rust_rpc_code_from_protobuffer(proto_filename: &PathBuf) -> Result<
 	prg::run(args).expect("protoc-rust-grpc");
 
 	let out_file = get_protobuf_rpc_generated_file(proto_filename);
-	println!("Protoc-rust-grpc ran on {:?} and created {:?}", proto_filename, out_file);
+	log::info!("Protoc-rust-grpc ran on {:?} and created {:?}", proto_filename, out_file);
 
 	Ok(out_file)
 }
@@ -68,7 +68,7 @@ pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
 	let hash = Arc::new(Mutex::new(String::new()));
 	let hash_clone = hash.clone();
 
-	println!("Adding {:?} to ipfs...", path);
+	log::info!("Adding {:?} to ipfs...", path);
 	let file = File::open(path)?;
 	let req = client
 		.add(file)
@@ -113,7 +113,7 @@ pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(), Error>) {
     for path in paths {
 		let path = path.unwrap().path();
 		if let Err(e) = func(&path) {
-			println!("{:?}", e);
+			log::error!("{:?}", e);
 		}
     }
 }
@@ -121,7 +121,7 @@ pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(), Error>) {
 pub fn write_to_file(new_file: &PathBuf, contents: &str) -> Result<(), Error> {
 	use std::io::Write;
 
-	println!("Writing file: {:?}", new_file);
+	log::info!("Writing file: {:?}", new_file);
 	let mut file = File::create(new_file)?;
 	file.write_all(contents.as_bytes())?;
 	Ok(())

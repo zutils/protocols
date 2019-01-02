@@ -14,12 +14,21 @@ lazy_static! {
     };
 }
 
+fn initialize_logging() {
+    std::env::set_var("RUST_LOG", "trace");
+    pretty_env_logger::init();
+    log::debug!("Logging initialized!");
+}
+
+#[no_mangle]
+pub extern fn init() {
+    initialize_logging();
+}
+
 #[no_mangle]
 /// Messages are sent through a single "propagate_ffi" function as bytes. 
 /// These bytes represent a Transport structure upon receive, and a VecTransport structure upon return.
 pub extern fn propagate_ffi(data: &[u8]) -> Vec<u8> {
-    std::env::set_var("RUST_LOG", "trace");
-    pretty_env_logger::init();
     log::debug!("Inside dynamic library.");
     protocols::pluginhandler::ffi_handle_received_bytes(&NODE, data)
 }

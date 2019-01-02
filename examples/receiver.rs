@@ -6,8 +6,7 @@ use protocols::{Data, ModuleToTransportGlue};
 
 fn main() -> Result<(), failure::Error> {
     // Initialize logging
-    std::env::set_var("RUST_LOG", "trace");
-    pretty_env_logger::init();
+    protocols::utils::initialize_standard_logging("")?;
 
     // Initialize plugin handler. The PluginHandler is ALSO our module root.
     let handler = PluginHandler::new();
@@ -26,7 +25,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Propogate through the handler tree to find a module matching the schema, and pass the generation info to it.
     // Note that we do not pass in a schema for data as the data message already contains the schema it is supposed to be used for.
-    handler.handle_trusted(data)?;
+    handler.handle_raw(data)?;
 
     Ok(())
 }

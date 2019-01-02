@@ -69,3 +69,38 @@ pub fn generate_rpc(schema: Schema, method_name: &str, serialized_data: Vec<u8>)
     rpc.set_serialized_rpc_arg(serialized_data);
     rpc
 }
+
+pub fn initialize_standard_logging(log_prefix: &'static str) -> Result<(), Error> {
+    use fern::colors::{Color, ColoredLevelConfig};
+
+    let mut colors = ColoredLevelConfig::new();
+    colors.error = Color::BrightRed;
+    colors.warn = Color::BrightYellow;
+    colors.info = Color::BrightGreen;
+    colors.debug = Color::BrightMagenta;
+    colors.trace = Color::BrightBlue;
+
+    fern::Dispatch::new()
+        // Perform allocation-free log formatting
+        .format(move |out, message, record| {
+            match record.level() {
+                log::Level::Info => out.finish(format_args!("{}{}: {}", log_prefix, colors.color(record.level()), message)),
+                _ => out.finish(format_args!("\t{}{}", log_prefix, message)),
+            }
+        })
+        // Add blanket level filter -
+        .level(log::LevelFilter::Debug)
+        .level_for("hyper", log::LevelFilter::Info)
+        .level_for("mio", log::LevelFilter::Info)
+        .level_for("tokio_reactor", log::LevelFilter::Info)
+        .level_for("tokio_threadpool", log::LevelFilter::Info)
+        .level_for("reqwest", log::LevelFilter::Info)
+        .level_for("want", log::LevelFilter::Info)
+        // Output to stdout, files, and other Dispatch configurations
+        .chain(std::io::stdout())
+        // Apply globally
+        .apply()?;
+
+    log::trace!("Logging initialized!");
+    Ok(())
+}

@@ -8,8 +8,7 @@ use protobuf::Message;
 
 fn main() -> Result<(), failure::Error> {
     // Initialize logging
-    std::env::set_var("RUST_LOG", "trace");
-    pretty_env_logger::init();
+    protocols::utils::initialize_standard_logging("")?;
 
     // Initialize plugin handler. The PluginHandler is ALSO our module root.
     let handler = PluginHandler::new();

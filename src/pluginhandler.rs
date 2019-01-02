@@ -30,6 +30,7 @@ impl DynamicLibraryLoader for PluginHandler {
 
 trait CommonFFI {
     fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error>;
+    fn call_ffi_init(&self) -> Result<(), Error>;
 }
 
 impl CommonFFI for libloading::Library {
@@ -37,7 +38,7 @@ impl CommonFFI for libloading::Library {
     fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
         use protobuf::Message;
 
-        log::debug!("Calling FFI function 'propagate_ffi(...)'");
+        log::trace!("Calling FFI function 'propagate_ffi(...)'");
 
         let bytes = transport.write_to_bytes()?;
 
@@ -49,6 +50,16 @@ impl CommonFFI for libloading::Library {
         let ret: VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
         log::trace!("Received from FFI: {:?}", ret);
         Ok(ret.vec.into_vec())
+    }
+
+    fn call_ffi_init(&self) -> Result<(), Error> {
+        log::trace!("Calling FFI function 'init()'");
+        unsafe {
+            let init: libloading::Symbol<unsafe extern fn()> = self.get(b"init")?;
+            init();
+        }
+        log::trace!("init() successful!");
+        Ok(())
     }
 }
 
@@ -94,58 +105,6 @@ impl Propagator for PluginHandler {
     }
 }
 
-
-
-/*
-    /// Get the library from the map, and handle results as trusted
-    pub fn handle_trusted_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
-        log::debug!("Handle trusted message {:?}", info);
-        let self_clone = self.clone();
-        let plugin = self.get_plugin(&info.schema_link)?;
-
-        // Call proper message
-        let method_name = info.rpc_method_name.clone();
-        let additional_messages = match method_name {
-            Some(_method_name) => plugin.lock().unwrap().receive_trusted_rpc(info)?,
-            None => plugin.lock().unwrap().handle_trusted(info)?,
-        };
-
-        // We want results to be handled non-blocking and iteratively.
-        ::std::thread::spawn(move || {
-            for msg in additional_messages.into_iter() {
-                if let Err(e) = self_clone.handle_trusted_msg_and_submsgs(msg) {
-                    log::debug!("{:?}", e);
-                }
-            }
-        });
-        Ok(())
-    }
-
-    /// Get the library from the map, and handle results as untrusted
-    pub fn handle_untrusted_msg_and_submsgs(&self, info: MessageInfo) -> Result<(), Error> {
-        log::debug!("Handle untrusted message {:?}", info);
-        let self_clone = self.clone();
-        let plugin = self.get_plugin(&info.schema_link)?;
-
-        // Call proper message
-        let method_name = info.rpc_method_name.clone();
-        let additional_messages = match method_name {
-            Some(_method_name) => plugin.lock().unwrap().receive_untrusted_rpc(info)?,
-            None => { log::debug!("Cannot handle untrusted messages! Only Rpc!"); Vec::new() },
-        };
-
-        // We want results to be handled non-blocking and iteratively.
-        ::std::thread::spawn(move || {
-            for msg in additional_messages.into_iter() {
-                if let Err(e) = self_clone.handle_untrusted_msg_and_submsgs(msg) {
-                    log::debug!("{:?}", e);
-                }
-            }
-        });
-        Ok(())
-    }
-}*/
-
 pub trait DynamicLibraryLoader {
     fn get_library_list(&self) -> Am<Vec<libloading::Library>>;
 
@@ -190,15 +149,15 @@ pub trait DynamicLibraryLoader {
 
 /// So that you can load different plugins while the application is running.
 fn load_plugin(path: &PathBuf) -> Result<libloading::Library, Error> {
-    let path_str = path.to_str().ok_or(failure::format_err!("Cannot convert to string"))?;
     log::debug!("Current Dir: {:?}", std::env::current_dir()?);
-    log::info!("Loading {}", path_str);
 
     if !path.exists() {
-        log::warn!("Path {:?} does not exist!", path);
+        return Err(failure::format_err!("Failed to load library. {:?} does not exist!", path));
     }
 
+    log::info!("Loading library {:?}", path);
     let library = libloading::Library::new(path)?;
+    library.call_ffi_init()?;
     log::info!("{:?} loaded successfully.", path);
     Ok(library)
 }
