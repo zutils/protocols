@@ -12,7 +12,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Initialize plugin handler. The PluginHandler is ALSO our module root.
     let handler = PluginHandler::new();
-    handler.load_plugin(&PathBuf::from("./libraries/test-protocol/target/release/test_protocol.dll"))?;
+    handler.load_plugin(&PathBuf::from("./libraries/test-protocol/target/debug/test_protocol.dll"))?;
 
     // Create a schema so the handler knows what module to call.
     let schema = protocols::utils::schema_ipfs_from_str(include_str!("../libraries/test-protocol/schema_urls/test.txt"));
