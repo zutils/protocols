@@ -33,7 +33,7 @@ impl CommonModule for TestInterface {
         }
     }
 
-    fn handle_trusted(&self, data: &Data) -> Result<VecData, Error> {
+    fn handle_raw(&self, data: &Data) -> Result<VecData, Error> {
         let (schema, test) = data.unwrap::<test::Test>()?;
         log::debug!("Received Test Message: ({:?},{:?})", schema, test);
 
@@ -41,11 +41,11 @@ impl CommonModule for TestInterface {
         Ok(ret)
     }
 
-    fn receive_trusted_rpc(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
+    fn receive_rpc_as_client(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
         Err(failure::format_err!("No Trusted Rpc for {:?}", SCHEMA_URL))
     }
 
-    fn receive_untrusted_rpc(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
+    fn receive_rpc_as_server(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
         Err(failure::format_err!("No Untrusted Rpc for {:?}", SCHEMA_URL))
     }
 }

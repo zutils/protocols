@@ -20,9 +20,9 @@ pub trait TransportToModuleGlue: CommonModule {
         match transport.request_type {
             RequestType::GET_INFO => self.get_info_glue(transport),
             RequestType::GENERATE_MESSAGE => self.generate_message_glue(transport),
-            RequestType::HANDLE_TRUSTED => self.handle_trusted_glue(transport),
-            RequestType::RECEIVE_TRUSTED_RPC => self.receive_trusted_rpc_glue(transport),
-            RequestType::RECEIVE_UNTRUSTED_RPC => self.receive_untrusted_rpc_glue(transport),
+            RequestType::HANDLE_RAW => self.handle_raw_glue(transport),
+            RequestType::RECEIVE_RPC_AS_CLIENT => self.receive_rpc_as_client_glue(transport),
+            RequestType::RECEIVE_RPC_AS_SERVER => self.receive_rpc_as_server_glue(transport),
             RequestType::NONE => { log::error!("No request type to handle!"); Ok(Vec::new()) },
         }
     }
@@ -43,25 +43,25 @@ pub trait TransportToModuleGlue: CommonModule {
         Ok(vec![ret])
     }
 
-    fn handle_trusted_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
+    fn handle_raw_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
         let msg = transport.get_payload().get_data();
-        let module_ret = self.handle_trusted(msg)?;
+        let module_ret = self.handle_raw(msg)?;
         let result = DataType_oneof_result::vecdata(module_ret);
         let ret = TransportResponse::create_Transport_result(result);
         Ok(vec![ret])
     }
 
-    fn receive_trusted_rpc_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
+    fn receive_rpc_as_client_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
         let msg = transport.get_payload().get_rpcdata();
-        let module_ret = self.receive_trusted_rpc(msg)?;
+        let module_ret = self.receive_rpc_as_client(msg)?;
         let result = DataType_oneof_result::vecrpcdata(module_ret);
         let ret = TransportResponse::create_Transport_result(result);
         Ok(vec![ret])
     }
 
-    fn receive_untrusted_rpc_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
+    fn receive_rpc_as_server_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
         let msg = transport.get_payload().get_rpcdata();
-        let module_ret = self.receive_untrusted_rpc(msg)?;
+        let module_ret = self.receive_rpc_as_server(msg)?;
         let result = DataType_oneof_result::vecrpcdata(module_ret);
         let ret = TransportResponse::create_Transport_result(result);
         Ok(vec![ret])
@@ -85,23 +85,23 @@ pub trait ModuleToTransportGlue: Propagator {
     }
 
     // handle of straight data is special because the data message contains the receiver.
-    fn handle_trusted(&self, data: Data) -> Result<VecData, Error> { 
-        log::debug!("Propagating handle_trusted({:?})", data);
-        let transport = TransportRequest::create_HANDLE_TRUSTED(data);
+    fn handle_raw(&self, data: Data) -> Result<VecData, Error> { 
+        log::debug!("Propagating handle_raw({:?})", data);
+        let transport = TransportRequest::create_HANDLE_RAW(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecData(transport_results)
     }
 
-    fn receive_trusted_rpc(&self, data: RpcData) -> Result<VecRpcData, Error> {
-        log::debug!("Propagating receive_trusted_rpc({:?})", data);
-        let transport = TransportRequest::create_RECEIVE_TRUSTED_RPC(data);
+    fn receive_rpc_as_client(&self, data: RpcData) -> Result<VecRpcData, Error> {
+        log::debug!("Propagating receive_rpc_as_client({:?})", data);
+        let transport = TransportRequest::create_RECEIVE_RPC_AS_CLIENT(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecRpcData(transport_results)
     }
 
-    fn receive_untrusted_rpc(&self, data: RpcData) -> Result<VecRpcData, Error> {
-        log::debug!("Propagating receive_untrusted_rpc({:?})", data);
-        let transport = TransportRequest::create_RECEIVE_UNTRUSTED_RPC(data);
+    fn receive_rpc_as_server(&self, data: RpcData) -> Result<VecRpcData, Error> {
+        log::debug!("Propagating receive_rpc_as_server({:?})", data);
+        let transport = TransportRequest::create_RECEIVE_RPC_AS_SERVER(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecRpcData(transport_results)
     }
@@ -137,29 +137,29 @@ impl TransportRequest {
         transport
     }
 
-    pub fn create_HANDLE_TRUSTED(data: Data) -> Transport {
+    pub fn create_HANDLE_RAW(data: Data) -> Transport {
         let destination = data.get_schema().clone();
         let result = DataType_oneof_result::data(data);
         let mut transport = TransportRequest::create_Transport_result(result);
-        transport.set_request_type(RequestType::HANDLE_TRUSTED);
+        transport.set_request_type(RequestType::HANDLE_RAW);
         transport.set_destination(destination);
         transport
     }
 
-    pub fn create_RECEIVE_TRUSTED_RPC(data: RpcData) -> Transport {
+    pub fn create_RECEIVE_RPC_AS_CLIENT(data: RpcData) -> Transport {
         let destination = data.get_schema().clone();
         let result = DataType_oneof_result::rpcdata(data);
         let mut transport = TransportRequest::create_Transport_result(result);
-        transport.set_request_type(RequestType::RECEIVE_TRUSTED_RPC);
+        transport.set_request_type(RequestType::RECEIVE_RPC_AS_CLIENT);
         transport.set_destination(destination);
         transport
     }
 
-    pub fn create_RECEIVE_UNTRUSTED_RPC(data: RpcData) -> Transport {
+    pub fn create_RECEIVE_RPC_AS_SERVER(data: RpcData) -> Transport {
         let destination = data.get_schema().clone();
         let result = DataType_oneof_result::rpcdata(data);
         let mut transport = TransportRequest::create_Transport_result(result);
-        transport.set_request_type(RequestType::RECEIVE_UNTRUSTED_RPC);
+        transport.set_request_type(RequestType::RECEIVE_RPC_AS_SERVER);
         transport.set_destination(destination);
         transport
     }

@@ -6,9 +6,9 @@ pub trait CommonModule {
 
     fn generate_message(&self, p: &GenerateMessageInfo) -> Result<Data, Error>;
 
-    fn handle_trusted(&self, p: &Data) -> Result<VecData, Error>;
+    fn handle_raw(&self, p: &Data) -> Result<VecData, Error>;
 
-    fn receive_trusted_rpc(&self, p: &RpcData) -> Result<VecRpcData, Error>;
+    fn receive_rpc_as_client(&self, p: &RpcData) -> Result<VecRpcData, Error>;
 
-    fn receive_untrusted_rpc(&self, p: &RpcData) -> Result<VecRpcData, Error>;
+    fn receive_rpc_as_server(&self, p: &RpcData) -> Result<VecRpcData, Error>;
 }

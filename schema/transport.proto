@@ -53,9 +53,9 @@ enum RequestType {
     NONE = 0;
     GET_INFO = 1;
     GENERATE_MESSAGE = 2;
-    HANDLE_TRUSTED = 3;
-    RECEIVE_TRUSTED_RPC = 4;
-    RECEIVE_UNTRUSTED_RPC = 5;
+    HANDLE_RAW = 3;
+    RECEIVE_RPC_AS_CLIENT = 4;
+    RECEIVE_RPC_AS_SERVER = 5;
 }
 
 
@@ -85,7 +85,7 @@ message VecTransport { repeated Transport vec = 1; }
 service CommonModule {
     rpc get_info(Destination) returns (VecModuleInfo);
     rpc generate_message(GenerateMessageInfo) returns (Data);
-    rpc handle_trusted(Data) returns (VecData);
-    rpc receive_trusted_rpc(RpcData) returns (VecRpcData);
-    rpc receive_untrusted_rpc(RpcData) returns (VecRpcData);
+    rpc handle_raw(Data) returns (VecData);
+    rpc receive_rpc_as_client(RpcData) returns (VecRpcData);
+    rpc receive_rpc_as_server(RpcData) returns (VecRpcData);
 }

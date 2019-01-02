@@ -3564,9 +3564,9 @@ pub enum RequestType {
     NONE = 0,
     GET_INFO = 1,
     GENERATE_MESSAGE = 2,
-    HANDLE_TRUSTED = 3,
-    RECEIVE_TRUSTED_RPC = 4,
-    RECEIVE_UNTRUSTED_RPC = 5,
+    HANDLE_RAW = 3,
+    RECEIVE_RPC_AS_CLIENT = 4,
+    RECEIVE_RPC_AS_SERVER = 5,
 }
 
 impl ::protobuf::ProtobufEnum for RequestType {
@@ -3579,9 +3579,9 @@ impl ::protobuf::ProtobufEnum for RequestType {
             0 => ::std::option::Option::Some(RequestType::NONE),
             1 => ::std::option::Option::Some(RequestType::GET_INFO),
             2 => ::std::option::Option::Some(RequestType::GENERATE_MESSAGE),
-            3 => ::std::option::Option::Some(RequestType::HANDLE_TRUSTED),
-            4 => ::std::option::Option::Some(RequestType::RECEIVE_TRUSTED_RPC),
-            5 => ::std::option::Option::Some(RequestType::RECEIVE_UNTRUSTED_RPC),
+            3 => ::std::option::Option::Some(RequestType::HANDLE_RAW),
+            4 => ::std::option::Option::Some(RequestType::RECEIVE_RPC_AS_CLIENT),
+            5 => ::std::option::Option::Some(RequestType::RECEIVE_RPC_AS_SERVER),
             _ => ::std::option::Option::None
         }
     }
@@ -3591,9 +3591,9 @@ impl ::protobuf::ProtobufEnum for RequestType {
             RequestType::NONE,
             RequestType::GET_INFO,
             RequestType::GENERATE_MESSAGE,
-            RequestType::HANDLE_TRUSTED,
-            RequestType::RECEIVE_TRUSTED_RPC,
-            RequestType::RECEIVE_UNTRUSTED_RPC,
+            RequestType::HANDLE_RAW,
+            RequestType::RECEIVE_RPC_AS_CLIENT,
+            RequestType::RECEIVE_RPC_AS_SERVER,
         ];
         values
     }
@@ -3658,11 +3658,11 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x1e\n\x07payload\x18\x02\
     \x20\x01(\x0b2\t.DataTypeB\x02\x18\0\x12&\n\x0crequest_type\x18\x03\x20\
     \x01(\x0e2\x0c.RequestTypeB\x02\x18\0\"+\n\x0cVecTransport\x12\x1b\n\x03\
-    vec\x18\x01\x20\x03(\x0b2\n.TransportB\x02\x18\0*\x87\x01\n\x0bRequestTy\
+    vec\x18\x01\x20\x03(\x0b2\n.TransportB\x02\x18\0*\x85\x01\n\x0bRequestTy\
     pe\x12\x08\n\x04NONE\x10\0\x12\x0c\n\x08GET_INFO\x10\x01\x12\x14\n\x10GE\
-    NERATE_MESSAGE\x10\x02\x12\x12\n\x0eHANDLE_TRUSTED\x10\x03\x12\x17\n\x13\
-    RECEIVE_TRUSTED_RPC\x10\x04\x12\x19\n\x15RECEIVE_UNTRUSTED_RPC\x10\x05\
-    \x1a\x02\x10\0B\0b\x06proto3\
+    NERATE_MESSAGE\x10\x02\x12\x0e\n\nHANDLE_RAW\x10\x03\x12\x19\n\x15RECEIV\
+    E_RPC_AS_CLIENT\x10\x04\x12\x19\n\x15RECEIVE_RPC_AS_SERVER\x10\x05\x1a\
+    \x02\x10\0B\0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
