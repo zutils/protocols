@@ -38,7 +38,7 @@ impl CommonFFI for libloading::Library {
     fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
         use protobuf::Message;
 
-        log::trace!("Calling FFI function 'propagate_ffi(...)'");
+        log::debug!("Calling FFI function 'propagate_ffi(...)'...");
 
         let bytes = transport.write_to_bytes()?;
 
@@ -48,17 +48,17 @@ impl CommonFFI for libloading::Library {
         };
 
         let ret: VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
-        log::trace!("Received from FFI: {:?}", ret);
+        log::debug!("...Received from FFI: {:?}", ret);
         Ok(ret.vec.into_vec())
     }
 
     fn call_ffi_init(&self) -> Result<(), Error> {
-        log::trace!("Calling FFI function 'init()'");
+        log::debug!("Calling FFI function 'init()'...");
         unsafe {
             let init: libloading::Symbol<unsafe extern fn()> = self.get(b"init")?;
             init();
         }
-        log::trace!("init() successful!");
+        log::debug!("...init() successful!");
         Ok(())
     }
 }
@@ -149,16 +149,14 @@ pub trait DynamicLibraryLoader {
 
 /// So that you can load different plugins while the application is running.
 fn load_plugin(path: &PathBuf) -> Result<libloading::Library, Error> {
-    log::debug!("Current Dir: {:?}", std::env::current_dir()?);
-
     if !path.exists() {
         return Err(failure::format_err!("Failed to load library. {:?} does not exist!", path));
     }
 
-    log::info!("Loading library {:?}", path);
+    log::debug!("Loading library {:?}...", path);
     let library = libloading::Library::new(path)?;
     library.call_ffi_init()?;
-    log::info!("{:?} loaded successfully.", path);
+    log::debug!("...{:?} loaded successfully.", path);
     Ok(library)
 }
 
