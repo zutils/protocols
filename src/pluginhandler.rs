@@ -38,7 +38,7 @@ impl CommonFFI for libloading::Library {
     fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
         use protobuf::Message;
 
-        log::debug!("Calling FFI function 'propagate_ffi(...)'...");
+        log::trace!("Calling FFI function 'propagate_ffi(...)'...");
 
         let bytes = transport.write_to_bytes()?;
 
@@ -48,7 +48,7 @@ impl CommonFFI for libloading::Library {
         };
 
         let ret: VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
-        log::debug!("...Received from FFI: {:?}", ret);
+        log::trace!("...Received from FFI: {:?}", ret);
         Ok(ret.vec.into_vec())
     }
 

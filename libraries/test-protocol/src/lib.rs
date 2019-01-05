@@ -27,6 +27,8 @@ pub extern fn init() {
 /// Messages are sent through a single "propagate_ffi" function as bytes. 
 /// These bytes represent a Transport structure upon receive, and a VecTransport structure upon return.
 pub extern fn propagate_ffi(data: &[u8]) -> Vec<u8> {
-    log::debug!("Inside dynamic library.");
-    protocols::pluginhandler::ffi_handle_received_bytes(&NODE, data)
+    log::trace!("Inside dynamic library propagate_ffi(...)...");
+    let ret = protocols::pluginhandler::ffi_handle_received_bytes(&NODE, data);
+    log::trace!("...Leaving dynamic library propagate_ffi(...)");
+    ret
 }
