@@ -56,6 +56,7 @@ enum RequestType {
     HANDLE_RAW = 3;
     RECEIVE_RPC_AS_CLIENT = 4;
     RECEIVE_RPC_AS_SERVER = 5;
+    RECEIVE_PUBLIC_RPC = 6;
 }
 
 
@@ -88,4 +89,5 @@ service CommonModule {
     rpc handle_raw(Data) returns (VecData);
     rpc receive_rpc_as_client(RpcData) returns (VecRpcData);
     rpc receive_rpc_as_server(RpcData) returns (VecRpcData);
+    rpc receive_public_rpc(RpcData) returns (VecRpcData);
 }

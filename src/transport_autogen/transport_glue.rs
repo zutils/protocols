@@ -23,6 +23,7 @@ pub trait TransportToModuleGlue: CommonModule {
             RequestType::HANDLE_RAW => self.handle_raw_glue(transport),
             RequestType::RECEIVE_RPC_AS_CLIENT => self.receive_rpc_as_client_glue(transport),
             RequestType::RECEIVE_RPC_AS_SERVER => self.receive_rpc_as_server_glue(transport),
+            RequestType::RECEIVE_PUBLIC_RPC => self.receive_public_rpc_glue(transport),
             RequestType::NONE => { log::error!("No request type to handle!"); Ok(Vec::new()) },
         }
     }
@@ -66,6 +67,14 @@ pub trait TransportToModuleGlue: CommonModule {
         let ret = TransportResponse::create_Transport_result(result);
         Ok(vec![ret])
     }
+
+    fn receive_public_rpc_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
+        let msg = transport.get_payload().get_rpcdata();
+        let module_ret = self.receive_public_rpc(msg)?;
+        let result = DataType_oneof_result::vecrpcdata(module_ret);
+        let ret = TransportResponse::create_Transport_result(result);
+        Ok(vec![ret])
+    }
 }
 
 /// This is glue to package up requests into Transports and unpacking them.
@@ -102,6 +111,13 @@ pub trait ModuleToTransportGlue: Propagator {
     fn receive_rpc_as_server(&self, data: RpcData) -> Result<VecRpcData, Error> {
         log::debug!("Propagating receive_rpc_as_server({:?})", data);
         let transport = TransportRequest::create_RECEIVE_RPC_AS_SERVER(data);
+        let transport_results = self.propagate_transport(&transport);
+        TransportCombiner::combine_to_VecRpcData(transport_results)
+    }
+
+    fn receive_public_rpc(&self, data: RpcData) -> Result<VecRpcData, Error> {
+        log::debug!("Propagating receive_public_rpc({:?})", data);
+        let transport = TransportRequest::create_RECEIVE_PUBLIC_RPC(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecRpcData(transport_results)
     }
@@ -160,6 +176,15 @@ impl TransportRequest {
         let result = DataType_oneof_result::rpcdata(data);
         let mut transport = TransportRequest::create_Transport_result(result);
         transport.set_request_type(RequestType::RECEIVE_RPC_AS_SERVER);
+        transport.set_destination(destination);
+        transport
+    }
+
+    pub fn create_RECEIVE_PUBLIC_RPC(data: RpcData) -> Transport {
+        let destination = data.get_schema().clone();
+        let result = DataType_oneof_result::rpcdata(data);
+        let mut transport = TransportRequest::create_Transport_result(result);
+        transport.set_request_type(RequestType::RECEIVE_PUBLIC_RPC);
         transport.set_destination(destination);
         transport
     }

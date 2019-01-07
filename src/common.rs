@@ -11,4 +11,6 @@ pub trait CommonModule {
     fn receive_rpc_as_client(&self, p: &RpcData) -> Result<VecRpcData, Error>;
 
     fn receive_rpc_as_server(&self, p: &RpcData) -> Result<VecRpcData, Error>;
+
+    fn receive_public_rpc(&self, p: &RpcData) -> Result<VecRpcData, Error>;
 }
