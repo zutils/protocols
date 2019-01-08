@@ -925,6 +925,7 @@ pub struct RpcData {
     pub method_name: ::std::string::String,
     pub serialized_rpc_arg: ::std::vec::Vec<u8>,
     pub schema: ::protobuf::SingularPtrField<Schema>,
+    pub field_return: ::protobuf::SingularPtrField<RpcData>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1021,11 +1022,49 @@ impl RpcData {
     pub fn get_schema(&self) -> &Schema {
         self.schema.as_ref().unwrap_or_else(|| Schema::default_instance())
     }
+
+    // .RpcData return = 4;
+
+    pub fn clear_field_return(&mut self) {
+        self.field_return.clear();
+    }
+
+    pub fn has_field_return(&self) -> bool {
+        self.field_return.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_field_return(&mut self, v: RpcData) {
+        self.field_return = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_field_return(&mut self) -> &mut RpcData {
+        if self.field_return.is_none() {
+            self.field_return.set_default();
+        }
+        self.field_return.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_field_return(&mut self) -> RpcData {
+        self.field_return.take().unwrap_or_else(|| RpcData::new())
+    }
+
+    pub fn get_field_return(&self) -> &RpcData {
+        self.field_return.as_ref().unwrap_or_else(|| RpcData::default_instance())
+    }
 }
 
 impl ::protobuf::Message for RpcData {
     fn is_initialized(&self) -> bool {
         for v in &self.schema {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.field_return {
             if !v.is_initialized() {
                 return false;
             }
@@ -1045,6 +1084,9 @@ impl ::protobuf::Message for RpcData {
                 },
                 3 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.schema)?;
+                },
+                4 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.field_return)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -1068,6 +1110,10 @@ impl ::protobuf::Message for RpcData {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
+        if let Some(ref v) = self.field_return.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -1082,6 +1128,11 @@ impl ::protobuf::Message for RpcData {
         }
         if let Some(ref v) = self.schema.as_ref() {
             os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        if let Some(ref v) = self.field_return.as_ref() {
+            os.write_tag(4, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
@@ -1142,6 +1193,11 @@ impl ::protobuf::Message for RpcData {
                     |m: &RpcData| { &m.schema },
                     |m: &mut RpcData| { &mut m.schema },
                 ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<RpcData>>(
+                    "return",
+                    |m: &RpcData| { &m.field_return },
+                    |m: &mut RpcData| { &mut m.field_return },
+                ));
                 ::protobuf::reflect::MessageDescriptor::new::<RpcData>(
                     "RpcData",
                     fields,
@@ -1167,6 +1223,7 @@ impl ::protobuf::Clear for RpcData {
         self.clear_method_name();
         self.clear_serialized_rpc_arg();
         self.clear_schema();
+        self.clear_field_return();
         self.unknown_fields.clear();
     }
 }
@@ -3567,6 +3624,7 @@ pub enum RequestType {
     HANDLE_RAW = 3,
     RECEIVE_RPC_AS_CLIENT = 4,
     RECEIVE_RPC_AS_SERVER = 5,
+    RECEIVE_PUBLIC_RPC = 6,
 }
 
 impl ::protobuf::ProtobufEnum for RequestType {
@@ -3582,6 +3640,7 @@ impl ::protobuf::ProtobufEnum for RequestType {
             3 => ::std::option::Option::Some(RequestType::HANDLE_RAW),
             4 => ::std::option::Option::Some(RequestType::RECEIVE_RPC_AS_CLIENT),
             5 => ::std::option::Option::Some(RequestType::RECEIVE_RPC_AS_SERVER),
+            6 => ::std::option::Option::Some(RequestType::RECEIVE_PUBLIC_RPC),
             _ => ::std::option::Option::None
         }
     }
@@ -3594,6 +3653,7 @@ impl ::protobuf::ProtobufEnum for RequestType {
             RequestType::HANDLE_RAW,
             RequestType::RECEIVE_RPC_AS_CLIENT,
             RequestType::RECEIVE_RPC_AS_SERVER,
+            RequestType::RECEIVE_PUBLIC_RPC,
         ];
         values
     }
@@ -3633,36 +3693,37 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x04UUID\x12\x0e\n\x02id\x18\x01\x20\x01(\tB\x02\x18\0\"\x1a\n\x05Erro\
     r\x12\x11\n\x05error\x18\x01\x20\x01(\tB\x02\x18\0\"@\n\x04Data\x12\x1b\
     \n\x06schema\x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x1b\n\x0fse\
-    rialized_data\x18\x02\x20\x01(\x0cB\x02\x18\0\"_\n\x07RpcData\x12\x17\n\
+    rialized_data\x18\x02\x20\x01(\x0cB\x02\x18\0\"}\n\x07RpcData\x12\x17\n\
     \x0bmethod_name\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1e\n\x12serialized_rp\
     c_arg\x18\x02\x20\x01(\x0cB\x02\x18\0\x12\x1b\n\x06schema\x18\x03\x20\
-    \x01(\x0b2\x07.SchemaB\x02\x18\0\";\n\nModuleInfo\x12\x1b\n\x06schema\
-    \x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x10\n\x04name\x18\x02\
-    \x20\x01(\tB\x02\x18\0\"Z\n\x13GenerateMessageInfo\x12\x14\n\x08template\
-    \x18\x01\x20\x01(\tB\x02\x18\0\x12\x10\n\x04args\x18\x02\x20\x03(\x0cB\
-    \x02\x18\0\x12\x1b\n\x06schema\x18\x03\x20\x01(\x0b2\x07.SchemaB\x02\x18\
-    \0\"*\n\x0bDestination\x12\x1b\n\x06schema\x18\x01\x20\x01(\x0b2\x07.Sch\
-    emaB\x02\x18\0\"!\n\x07VecData\x12\x16\n\x03vec\x18\x01\x20\x03(\x0b2\
-    \x05.DataB\x02\x18\0\"-\n\rVecModuleInfo\x12\x1c\n\x03vec\x18\x01\x20\
-    \x03(\x0b2\x0b.ModuleInfoB\x02\x18\0\"'\n\nVecRpcData\x12\x19\n\x03vec\
-    \x18\x01\x20\x03(\x0b2\x08.RpcDataB\x02\x18\0\"\xc4\x02\n\x08DataType\
-    \x12\x1b\n\x05error\x18\x01\x20\x01(\x0b2\x06.ErrorH\0B\x02\x18\0\x12\
-    \x19\n\x04data\x18\x02\x20\x01(\x0b2\x05.DataH\0B\x02\x18\0\x12+\n\rvecm\
-    oduleinfo\x18\x03\x20\x01(\x0b2\x0e.VecModuleInfoH\0B\x02\x18\0\x12\x1f\
-    \n\x07rpcdata\x18\x04\x20\x01(\x0b2\x08.RpcDataH\0B\x02\x18\0\x127\n\x13\
-    generatemessageinfo\x18\x05\x20\x01(\x0b2\x14.GenerateMessageInfoH\0B\
-    \x02\x18\0\x12'\n\x0bdestination\x18\x06\x20\x01(\x0b2\x0c.DestinationH\
-    \0B\x02\x18\0\x12\x1f\n\x07vecdata\x18\x07\x20\x01(\x0b2\x08.VecDataH\0B\
-    \x02\x18\0\x12%\n\nvecrpcdata\x18\x08\x20\x01(\x0b2\x0b.VecRpcDataH\0B\
-    \x02\x18\0B\x08\n\x06result\"u\n\tTransport\x12\x20\n\x0bdestination\x18\
-    \x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x1e\n\x07payload\x18\x02\
-    \x20\x01(\x0b2\t.DataTypeB\x02\x18\0\x12&\n\x0crequest_type\x18\x03\x20\
-    \x01(\x0e2\x0c.RequestTypeB\x02\x18\0\"+\n\x0cVecTransport\x12\x1b\n\x03\
-    vec\x18\x01\x20\x03(\x0b2\n.TransportB\x02\x18\0*\x85\x01\n\x0bRequestTy\
-    pe\x12\x08\n\x04NONE\x10\0\x12\x0c\n\x08GET_INFO\x10\x01\x12\x14\n\x10GE\
-    NERATE_MESSAGE\x10\x02\x12\x0e\n\nHANDLE_RAW\x10\x03\x12\x19\n\x15RECEIV\
-    E_RPC_AS_CLIENT\x10\x04\x12\x19\n\x15RECEIVE_RPC_AS_SERVER\x10\x05\x1a\
-    \x02\x10\0B\0b\x06proto3\
+    \x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x1c\n\x06return\x18\x04\x20\x01(\
+    \x0b2\x08.RpcDataB\x02\x18\0\";\n\nModuleInfo\x12\x1b\n\x06schema\x18\
+    \x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x10\n\x04name\x18\x02\x20\
+    \x01(\tB\x02\x18\0\"Z\n\x13GenerateMessageInfo\x12\x14\n\x08template\x18\
+    \x01\x20\x01(\tB\x02\x18\0\x12\x10\n\x04args\x18\x02\x20\x03(\x0cB\x02\
+    \x18\0\x12\x1b\n\x06schema\x18\x03\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\"\
+    *\n\x0bDestination\x12\x1b\n\x06schema\x18\x01\x20\x01(\x0b2\x07.SchemaB\
+    \x02\x18\0\"!\n\x07VecData\x12\x16\n\x03vec\x18\x01\x20\x03(\x0b2\x05.Da\
+    taB\x02\x18\0\"-\n\rVecModuleInfo\x12\x1c\n\x03vec\x18\x01\x20\x03(\x0b2\
+    \x0b.ModuleInfoB\x02\x18\0\"'\n\nVecRpcData\x12\x19\n\x03vec\x18\x01\x20\
+    \x03(\x0b2\x08.RpcDataB\x02\x18\0\"\xc4\x02\n\x08DataType\x12\x1b\n\x05e\
+    rror\x18\x01\x20\x01(\x0b2\x06.ErrorH\0B\x02\x18\0\x12\x19\n\x04data\x18\
+    \x02\x20\x01(\x0b2\x05.DataH\0B\x02\x18\0\x12+\n\rvecmoduleinfo\x18\x03\
+    \x20\x01(\x0b2\x0e.VecModuleInfoH\0B\x02\x18\0\x12\x1f\n\x07rpcdata\x18\
+    \x04\x20\x01(\x0b2\x08.RpcDataH\0B\x02\x18\0\x127\n\x13generatemessagein\
+    fo\x18\x05\x20\x01(\x0b2\x14.GenerateMessageInfoH\0B\x02\x18\0\x12'\n\
+    \x0bdestination\x18\x06\x20\x01(\x0b2\x0c.DestinationH\0B\x02\x18\0\x12\
+    \x1f\n\x07vecdata\x18\x07\x20\x01(\x0b2\x08.VecDataH\0B\x02\x18\0\x12%\n\
+    \nvecrpcdata\x18\x08\x20\x01(\x0b2\x0b.VecRpcDataH\0B\x02\x18\0B\x08\n\
+    \x06result\"u\n\tTransport\x12\x20\n\x0bdestination\x18\x01\x20\x01(\x0b\
+    2\x07.SchemaB\x02\x18\0\x12\x1e\n\x07payload\x18\x02\x20\x01(\x0b2\t.Dat\
+    aTypeB\x02\x18\0\x12&\n\x0crequest_type\x18\x03\x20\x01(\x0e2\x0c.Reques\
+    tTypeB\x02\x18\0\"+\n\x0cVecTransport\x12\x1b\n\x03vec\x18\x01\x20\x03(\
+    \x0b2\n.TransportB\x02\x18\0*\x9d\x01\n\x0bRequestType\x12\x08\n\x04NONE\
+    \x10\0\x12\x0c\n\x08GET_INFO\x10\x01\x12\x14\n\x10GENERATE_MESSAGE\x10\
+    \x02\x12\x0e\n\nHANDLE_RAW\x10\x03\x12\x19\n\x15RECEIVE_RPC_AS_CLIENT\
+    \x10\x04\x12\x19\n\x15RECEIVE_RPC_AS_SERVER\x10\x05\x12\x16\n\x12RECEIVE\
+    _PUBLIC_RPC\x10\x06\x1a\x02\x10\0B\0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

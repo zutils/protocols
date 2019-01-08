@@ -48,6 +48,10 @@ impl CommonModule for TestInterface {
     fn receive_rpc_as_server(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
         Err(failure::format_err!("No Untrusted Rpc for {:?}", SCHEMA_URL))
     }
+
+    fn receive_public_rpc(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
+        Err(failure::format_err!("No public Rpc for {:?}", SCHEMA_URL))
+    }
 }
 
 fn generate_test(name: &str, data: &str) -> Result<test::Test, Error> {   
@@ -56,4 +60,3 @@ fn generate_test(name: &str, data: &str) -> Result<test::Test, Error> {
     structure.set_data(data.to_string());
     Ok(structure)
 }
-

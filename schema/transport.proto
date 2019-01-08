@@ -27,6 +27,7 @@ message RpcData {
     string method_name = 1;
     bytes serialized_rpc_arg = 2;
     Schema schema = 3;
+    RpcData return = 4;
 }
 
 message ModuleInfo {
