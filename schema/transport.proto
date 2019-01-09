@@ -20,6 +20,7 @@ message Error { string error = 1; }
 message Data {
     Schema schema = 1;
     bytes serialized_data = 2;
+    Sender sender = 3;
 }
 
 // Include the method name and the serialized gRPC data.
@@ -28,6 +29,7 @@ message RpcData {
     bytes serialized_rpc_arg = 2;
     Schema schema = 3;
     RpcData return = 4;
+    Sender sender = 5;
 }
 
 message ModuleInfo {
@@ -39,6 +41,11 @@ message GenerateMessageInfo {
     string template = 1;
     repeated bytes args = 2;
     Schema schema = 3;
+}
+
+message Sender {
+    string ipfs_topic = 1;
+    string ipns_client = 2;
 }
 
 // Special case for functions that would normally take Destination

@@ -701,6 +701,7 @@ pub struct Data {
     // message fields
     pub schema: ::protobuf::SingularPtrField<Schema>,
     pub serialized_data: ::std::vec::Vec<u8>,
+    pub sender: ::protobuf::SingularPtrField<Sender>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -771,11 +772,49 @@ impl Data {
     pub fn get_serialized_data(&self) -> &[u8] {
         &self.serialized_data
     }
+
+    // .Sender sender = 3;
+
+    pub fn clear_sender(&mut self) {
+        self.sender.clear();
+    }
+
+    pub fn has_sender(&self) -> bool {
+        self.sender.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_sender(&mut self, v: Sender) {
+        self.sender = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_sender(&mut self) -> &mut Sender {
+        if self.sender.is_none() {
+            self.sender.set_default();
+        }
+        self.sender.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_sender(&mut self) -> Sender {
+        self.sender.take().unwrap_or_else(|| Sender::new())
+    }
+
+    pub fn get_sender(&self) -> &Sender {
+        self.sender.as_ref().unwrap_or_else(|| Sender::default_instance())
+    }
 }
 
 impl ::protobuf::Message for Data {
     fn is_initialized(&self) -> bool {
         for v in &self.schema {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.sender {
             if !v.is_initialized() {
                 return false;
             }
@@ -792,6 +831,9 @@ impl ::protobuf::Message for Data {
                 },
                 2 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.serialized_data)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.sender)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -812,6 +854,10 @@ impl ::protobuf::Message for Data {
         if !self.serialized_data.is_empty() {
             my_size += ::protobuf::rt::bytes_size(2, &self.serialized_data);
         }
+        if let Some(ref v) = self.sender.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -825,6 +871,11 @@ impl ::protobuf::Message for Data {
         }
         if !self.serialized_data.is_empty() {
             os.write_bytes(2, &self.serialized_data)?;
+        }
+        if let Some(ref v) = self.sender.as_ref() {
+            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -878,6 +929,11 @@ impl ::protobuf::Message for Data {
                     |m: &Data| { &m.serialized_data },
                     |m: &mut Data| { &mut m.serialized_data },
                 ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Sender>>(
+                    "sender",
+                    |m: &Data| { &m.sender },
+                    |m: &mut Data| { &mut m.sender },
+                ));
                 ::protobuf::reflect::MessageDescriptor::new::<Data>(
                     "Data",
                     fields,
@@ -902,6 +958,7 @@ impl ::protobuf::Clear for Data {
     fn clear(&mut self) {
         self.clear_schema();
         self.clear_serialized_data();
+        self.clear_sender();
         self.unknown_fields.clear();
     }
 }
@@ -926,6 +983,7 @@ pub struct RpcData {
     pub serialized_rpc_arg: ::std::vec::Vec<u8>,
     pub schema: ::protobuf::SingularPtrField<Schema>,
     pub field_return: ::protobuf::SingularPtrField<RpcData>,
+    pub sender: ::protobuf::SingularPtrField<Sender>,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1055,6 +1113,39 @@ impl RpcData {
     pub fn get_field_return(&self) -> &RpcData {
         self.field_return.as_ref().unwrap_or_else(|| RpcData::default_instance())
     }
+
+    // .Sender sender = 5;
+
+    pub fn clear_sender(&mut self) {
+        self.sender.clear();
+    }
+
+    pub fn has_sender(&self) -> bool {
+        self.sender.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_sender(&mut self, v: Sender) {
+        self.sender = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_sender(&mut self) -> &mut Sender {
+        if self.sender.is_none() {
+            self.sender.set_default();
+        }
+        self.sender.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_sender(&mut self) -> Sender {
+        self.sender.take().unwrap_or_else(|| Sender::new())
+    }
+
+    pub fn get_sender(&self) -> &Sender {
+        self.sender.as_ref().unwrap_or_else(|| Sender::default_instance())
+    }
 }
 
 impl ::protobuf::Message for RpcData {
@@ -1065,6 +1156,11 @@ impl ::protobuf::Message for RpcData {
             }
         };
         for v in &self.field_return {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.sender {
             if !v.is_initialized() {
                 return false;
             }
@@ -1087,6 +1183,9 @@ impl ::protobuf::Message for RpcData {
                 },
                 4 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.field_return)?;
+                },
+                5 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.sender)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -1114,6 +1213,10 @@ impl ::protobuf::Message for RpcData {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
+        if let Some(ref v) = self.sender.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -1133,6 +1236,11 @@ impl ::protobuf::Message for RpcData {
         }
         if let Some(ref v) = self.field_return.as_ref() {
             os.write_tag(4, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        if let Some(ref v) = self.sender.as_ref() {
+            os.write_tag(5, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
@@ -1198,6 +1306,11 @@ impl ::protobuf::Message for RpcData {
                     |m: &RpcData| { &m.field_return },
                     |m: &mut RpcData| { &mut m.field_return },
                 ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<Sender>>(
+                    "sender",
+                    |m: &RpcData| { &m.sender },
+                    |m: &mut RpcData| { &mut m.sender },
+                ));
                 ::protobuf::reflect::MessageDescriptor::new::<RpcData>(
                     "RpcData",
                     fields,
@@ -1224,6 +1337,7 @@ impl ::protobuf::Clear for RpcData {
         self.clear_serialized_rpc_arg();
         self.clear_schema();
         self.clear_field_return();
+        self.clear_sender();
         self.unknown_fields.clear();
     }
 }
@@ -1722,6 +1836,214 @@ impl ::std::fmt::Debug for GenerateMessageInfo {
 }
 
 impl ::protobuf::reflect::ProtobufValue for GenerateMessageInfo {
+    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
+        ::protobuf::reflect::ProtobufValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub struct Sender {
+    // message fields
+    pub ipfs_topic: ::std::string::String,
+    pub ipns_client: ::std::string::String,
+    // special fields
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub unknown_fields: ::protobuf::UnknownFields,
+    #[cfg_attr(feature = "with-serde", serde(skip))]
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl Sender {
+    pub fn new() -> Sender {
+        ::std::default::Default::default()
+    }
+
+    // string ipfs_topic = 1;
+
+    pub fn clear_ipfs_topic(&mut self) {
+        self.ipfs_topic.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_ipfs_topic(&mut self, v: ::std::string::String) {
+        self.ipfs_topic = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_ipfs_topic(&mut self) -> &mut ::std::string::String {
+        &mut self.ipfs_topic
+    }
+
+    // Take field
+    pub fn take_ipfs_topic(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.ipfs_topic, ::std::string::String::new())
+    }
+
+    pub fn get_ipfs_topic(&self) -> &str {
+        &self.ipfs_topic
+    }
+
+    // string ipns_client = 2;
+
+    pub fn clear_ipns_client(&mut self) {
+        self.ipns_client.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_ipns_client(&mut self, v: ::std::string::String) {
+        self.ipns_client = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_ipns_client(&mut self) -> &mut ::std::string::String {
+        &mut self.ipns_client
+    }
+
+    // Take field
+    pub fn take_ipns_client(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.ipns_client, ::std::string::String::new())
+    }
+
+    pub fn get_ipns_client(&self) -> &str {
+        &self.ipns_client
+    }
+}
+
+impl ::protobuf::Message for Sender {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.ipfs_topic)?;
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.ipns_client)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if !self.ipfs_topic.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.ipfs_topic);
+        }
+        if !self.ipns_client.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.ipns_client);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
+        if !self.ipfs_topic.is_empty() {
+            os.write_string(1, &self.ipfs_topic)?;
+        }
+        if !self.ipns_client.is_empty() {
+            os.write_string(2, &self.ipns_client)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &::std::any::Any {
+        self as &::std::any::Any
+    }
+    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
+        self as &mut ::std::any::Any
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> Sender {
+        Sender::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
+        };
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                    "ipfs_topic",
+                    |m: &Sender| { &m.ipfs_topic },
+                    |m: &mut Sender| { &mut m.ipfs_topic },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                    "ipns_client",
+                    |m: &Sender| { &m.ipns_client },
+                    |m: &mut Sender| { &mut m.ipns_client },
+                ));
+                ::protobuf::reflect::MessageDescriptor::new::<Sender>(
+                    "Sender",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+
+    fn default_instance() -> &'static Sender {
+        static mut instance: ::protobuf::lazy::Lazy<Sender> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Sender,
+        };
+        unsafe {
+            instance.get(Sender::new)
+        }
+    }
+}
+
+impl ::protobuf::Clear for Sender {
+    fn clear(&mut self) {
+        self.clear_ipfs_topic();
+        self.clear_ipns_client();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for Sender {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Sender {
     fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
         ::protobuf::reflect::ProtobufValueRef::Message(self)
     }
@@ -3691,39 +4013,43 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x01(\tH\0B\x02\x18\0\x12\x12\n\x04Ipfs\x18\x03\x20\x01(\tH\0B\x02\x18\0\
     \x12\x12\n\x04Ipns\x18\x04\x20\x01(\tH\0B\x02\x18\0B\x06\n\x04data\"\x16\
     \n\x04UUID\x12\x0e\n\x02id\x18\x01\x20\x01(\tB\x02\x18\0\"\x1a\n\x05Erro\
-    r\x12\x11\n\x05error\x18\x01\x20\x01(\tB\x02\x18\0\"@\n\x04Data\x12\x1b\
+    r\x12\x11\n\x05error\x18\x01\x20\x01(\tB\x02\x18\0\"]\n\x04Data\x12\x1b\
     \n\x06schema\x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x1b\n\x0fse\
-    rialized_data\x18\x02\x20\x01(\x0cB\x02\x18\0\"}\n\x07RpcData\x12\x17\n\
-    \x0bmethod_name\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1e\n\x12serialized_rp\
-    c_arg\x18\x02\x20\x01(\x0cB\x02\x18\0\x12\x1b\n\x06schema\x18\x03\x20\
+    rialized_data\x18\x02\x20\x01(\x0cB\x02\x18\0\x12\x1b\n\x06sender\x18\
+    \x03\x20\x01(\x0b2\x07.SenderB\x02\x18\0\"\x9a\x01\n\x07RpcData\x12\x17\
+    \n\x0bmethod_name\x18\x01\x20\x01(\tB\x02\x18\0\x12\x1e\n\x12serialized_\
+    rpc_arg\x18\x02\x20\x01(\x0cB\x02\x18\0\x12\x1b\n\x06schema\x18\x03\x20\
     \x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x1c\n\x06return\x18\x04\x20\x01(\
-    \x0b2\x08.RpcDataB\x02\x18\0\";\n\nModuleInfo\x12\x1b\n\x06schema\x18\
-    \x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x10\n\x04name\x18\x02\x20\
-    \x01(\tB\x02\x18\0\"Z\n\x13GenerateMessageInfo\x12\x14\n\x08template\x18\
-    \x01\x20\x01(\tB\x02\x18\0\x12\x10\n\x04args\x18\x02\x20\x03(\x0cB\x02\
-    \x18\0\x12\x1b\n\x06schema\x18\x03\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\"\
-    *\n\x0bDestination\x12\x1b\n\x06schema\x18\x01\x20\x01(\x0b2\x07.SchemaB\
-    \x02\x18\0\"!\n\x07VecData\x12\x16\n\x03vec\x18\x01\x20\x03(\x0b2\x05.Da\
-    taB\x02\x18\0\"-\n\rVecModuleInfo\x12\x1c\n\x03vec\x18\x01\x20\x03(\x0b2\
-    \x0b.ModuleInfoB\x02\x18\0\"'\n\nVecRpcData\x12\x19\n\x03vec\x18\x01\x20\
-    \x03(\x0b2\x08.RpcDataB\x02\x18\0\"\xc4\x02\n\x08DataType\x12\x1b\n\x05e\
-    rror\x18\x01\x20\x01(\x0b2\x06.ErrorH\0B\x02\x18\0\x12\x19\n\x04data\x18\
-    \x02\x20\x01(\x0b2\x05.DataH\0B\x02\x18\0\x12+\n\rvecmoduleinfo\x18\x03\
-    \x20\x01(\x0b2\x0e.VecModuleInfoH\0B\x02\x18\0\x12\x1f\n\x07rpcdata\x18\
-    \x04\x20\x01(\x0b2\x08.RpcDataH\0B\x02\x18\0\x127\n\x13generatemessagein\
-    fo\x18\x05\x20\x01(\x0b2\x14.GenerateMessageInfoH\0B\x02\x18\0\x12'\n\
-    \x0bdestination\x18\x06\x20\x01(\x0b2\x0c.DestinationH\0B\x02\x18\0\x12\
-    \x1f\n\x07vecdata\x18\x07\x20\x01(\x0b2\x08.VecDataH\0B\x02\x18\0\x12%\n\
-    \nvecrpcdata\x18\x08\x20\x01(\x0b2\x0b.VecRpcDataH\0B\x02\x18\0B\x08\n\
-    \x06result\"u\n\tTransport\x12\x20\n\x0bdestination\x18\x01\x20\x01(\x0b\
-    2\x07.SchemaB\x02\x18\0\x12\x1e\n\x07payload\x18\x02\x20\x01(\x0b2\t.Dat\
-    aTypeB\x02\x18\0\x12&\n\x0crequest_type\x18\x03\x20\x01(\x0e2\x0c.Reques\
-    tTypeB\x02\x18\0\"+\n\x0cVecTransport\x12\x1b\n\x03vec\x18\x01\x20\x03(\
-    \x0b2\n.TransportB\x02\x18\0*\x9d\x01\n\x0bRequestType\x12\x08\n\x04NONE\
-    \x10\0\x12\x0c\n\x08GET_INFO\x10\x01\x12\x14\n\x10GENERATE_MESSAGE\x10\
-    \x02\x12\x0e\n\nHANDLE_RAW\x10\x03\x12\x19\n\x15RECEIVE_RPC_AS_CLIENT\
-    \x10\x04\x12\x19\n\x15RECEIVE_RPC_AS_SERVER\x10\x05\x12\x16\n\x12RECEIVE\
-    _PUBLIC_RPC\x10\x06\x1a\x02\x10\0B\0b\x06proto3\
+    \x0b2\x08.RpcDataB\x02\x18\0\x12\x1b\n\x06sender\x18\x05\x20\x01(\x0b2\
+    \x07.SenderB\x02\x18\0\";\n\nModuleInfo\x12\x1b\n\x06schema\x18\x01\x20\
+    \x01(\x0b2\x07.SchemaB\x02\x18\0\x12\x10\n\x04name\x18\x02\x20\x01(\tB\
+    \x02\x18\0\"Z\n\x13GenerateMessageInfo\x12\x14\n\x08template\x18\x01\x20\
+    \x01(\tB\x02\x18\0\x12\x10\n\x04args\x18\x02\x20\x03(\x0cB\x02\x18\0\x12\
+    \x1b\n\x06schema\x18\x03\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\"9\n\x06Sen\
+    der\x12\x16\n\nipfs_topic\x18\x01\x20\x01(\tB\x02\x18\0\x12\x17\n\x0bipn\
+    s_client\x18\x02\x20\x01(\tB\x02\x18\0\"*\n\x0bDestination\x12\x1b\n\x06\
+    schema\x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\"!\n\x07VecData\x12\
+    \x16\n\x03vec\x18\x01\x20\x03(\x0b2\x05.DataB\x02\x18\0\"-\n\rVecModuleI\
+    nfo\x12\x1c\n\x03vec\x18\x01\x20\x03(\x0b2\x0b.ModuleInfoB\x02\x18\0\"'\
+    \n\nVecRpcData\x12\x19\n\x03vec\x18\x01\x20\x03(\x0b2\x08.RpcDataB\x02\
+    \x18\0\"\xc4\x02\n\x08DataType\x12\x1b\n\x05error\x18\x01\x20\x01(\x0b2\
+    \x06.ErrorH\0B\x02\x18\0\x12\x19\n\x04data\x18\x02\x20\x01(\x0b2\x05.Dat\
+    aH\0B\x02\x18\0\x12+\n\rvecmoduleinfo\x18\x03\x20\x01(\x0b2\x0e.VecModul\
+    eInfoH\0B\x02\x18\0\x12\x1f\n\x07rpcdata\x18\x04\x20\x01(\x0b2\x08.RpcDa\
+    taH\0B\x02\x18\0\x127\n\x13generatemessageinfo\x18\x05\x20\x01(\x0b2\x14\
+    .GenerateMessageInfoH\0B\x02\x18\0\x12'\n\x0bdestination\x18\x06\x20\x01\
+    (\x0b2\x0c.DestinationH\0B\x02\x18\0\x12\x1f\n\x07vecdata\x18\x07\x20\
+    \x01(\x0b2\x08.VecDataH\0B\x02\x18\0\x12%\n\nvecrpcdata\x18\x08\x20\x01(\
+    \x0b2\x0b.VecRpcDataH\0B\x02\x18\0B\x08\n\x06result\"u\n\tTransport\x12\
+    \x20\n\x0bdestination\x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\x12\
+    \x1e\n\x07payload\x18\x02\x20\x01(\x0b2\t.DataTypeB\x02\x18\0\x12&\n\x0c\
+    request_type\x18\x03\x20\x01(\x0e2\x0c.RequestTypeB\x02\x18\0\"+\n\x0cVe\
+    cTransport\x12\x1b\n\x03vec\x18\x01\x20\x03(\x0b2\n.TransportB\x02\x18\0\
+    *\x9d\x01\n\x0bRequestType\x12\x08\n\x04NONE\x10\0\x12\x0c\n\x08GET_INFO\
+    \x10\x01\x12\x14\n\x10GENERATE_MESSAGE\x10\x02\x12\x0e\n\nHANDLE_RAW\x10\
+    \x03\x12\x19\n\x15RECEIVE_RPC_AS_CLIENT\x10\x04\x12\x19\n\x15RECEIVE_RPC\
+    _AS_SERVER\x10\x05\x12\x16\n\x12RECEIVE_PUBLIC_RPC\x10\x06\x1a\x02\x10\0\
+    B\0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
