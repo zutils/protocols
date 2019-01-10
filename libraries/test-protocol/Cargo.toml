@@ -17,4 +17,4 @@ protocols = { path = "../../../protocols" }
 log = "*"
 
 [lib]
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
