@@ -44,8 +44,8 @@ message GenerateMessageInfo {
 }
 
 message Sender {
-    string ipfs_topic = 1;
-    string ipns_client = 2;
+    string ipns_layer = 1;
+    string ipns_sender = 2;
 }
 
 // Special case for functions that would normally take Destination
@@ -94,7 +94,7 @@ message VecTransport { repeated Transport vec = 1; }
 service CommonModule {
     rpc get_info(Destination) returns (VecModuleInfo);
     rpc generate_message(GenerateMessageInfo) returns (Data);
-    rpc handle_raw(Data) returns (VecData);
+    rpc handle_raw(Data) returns (RpcData);
     rpc receive_rpc_as_client(RpcData) returns (VecRpcData);
     rpc receive_rpc_as_server(RpcData) returns (VecRpcData);
     rpc receive_public_rpc(RpcData) returns (VecRpcData);

@@ -1845,8 +1845,8 @@ impl ::protobuf::reflect::ProtobufValue for GenerateMessageInfo {
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct Sender {
     // message fields
-    pub ipfs_topic: ::std::string::String,
-    pub ipns_client: ::std::string::String,
+    pub ipns_layer: ::std::string::String,
+    pub ipns_sender: ::std::string::String,
     // special fields
     #[cfg_attr(feature = "with-serde", serde(skip))]
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -1859,56 +1859,56 @@ impl Sender {
         ::std::default::Default::default()
     }
 
-    // string ipfs_topic = 1;
+    // string ipns_layer = 1;
 
-    pub fn clear_ipfs_topic(&mut self) {
-        self.ipfs_topic.clear();
+    pub fn clear_ipns_layer(&mut self) {
+        self.ipns_layer.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_ipfs_topic(&mut self, v: ::std::string::String) {
-        self.ipfs_topic = v;
+    pub fn set_ipns_layer(&mut self, v: ::std::string::String) {
+        self.ipns_layer = v;
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_ipfs_topic(&mut self) -> &mut ::std::string::String {
-        &mut self.ipfs_topic
+    pub fn mut_ipns_layer(&mut self) -> &mut ::std::string::String {
+        &mut self.ipns_layer
     }
 
     // Take field
-    pub fn take_ipfs_topic(&mut self) -> ::std::string::String {
-        ::std::mem::replace(&mut self.ipfs_topic, ::std::string::String::new())
+    pub fn take_ipns_layer(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.ipns_layer, ::std::string::String::new())
     }
 
-    pub fn get_ipfs_topic(&self) -> &str {
-        &self.ipfs_topic
+    pub fn get_ipns_layer(&self) -> &str {
+        &self.ipns_layer
     }
 
-    // string ipns_client = 2;
+    // string ipns_sender = 2;
 
-    pub fn clear_ipns_client(&mut self) {
-        self.ipns_client.clear();
+    pub fn clear_ipns_sender(&mut self) {
+        self.ipns_sender.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_ipns_client(&mut self, v: ::std::string::String) {
-        self.ipns_client = v;
+    pub fn set_ipns_sender(&mut self, v: ::std::string::String) {
+        self.ipns_sender = v;
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_ipns_client(&mut self) -> &mut ::std::string::String {
-        &mut self.ipns_client
+    pub fn mut_ipns_sender(&mut self) -> &mut ::std::string::String {
+        &mut self.ipns_sender
     }
 
     // Take field
-    pub fn take_ipns_client(&mut self) -> ::std::string::String {
-        ::std::mem::replace(&mut self.ipns_client, ::std::string::String::new())
+    pub fn take_ipns_sender(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.ipns_sender, ::std::string::String::new())
     }
 
-    pub fn get_ipns_client(&self) -> &str {
-        &self.ipns_client
+    pub fn get_ipns_sender(&self) -> &str {
+        &self.ipns_sender
     }
 }
 
@@ -1922,10 +1922,10 @@ impl ::protobuf::Message for Sender {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
-                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.ipfs_topic)?;
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.ipns_layer)?;
                 },
                 2 => {
-                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.ipns_client)?;
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.ipns_sender)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -1939,11 +1939,11 @@ impl ::protobuf::Message for Sender {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if !self.ipfs_topic.is_empty() {
-            my_size += ::protobuf::rt::string_size(1, &self.ipfs_topic);
+        if !self.ipns_layer.is_empty() {
+            my_size += ::protobuf::rt::string_size(1, &self.ipns_layer);
         }
-        if !self.ipns_client.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.ipns_client);
+        if !self.ipns_sender.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.ipns_sender);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -1951,11 +1951,11 @@ impl ::protobuf::Message for Sender {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
-        if !self.ipfs_topic.is_empty() {
-            os.write_string(1, &self.ipfs_topic)?;
+        if !self.ipns_layer.is_empty() {
+            os.write_string(1, &self.ipns_layer)?;
         }
-        if !self.ipns_client.is_empty() {
-            os.write_string(2, &self.ipns_client)?;
+        if !self.ipns_sender.is_empty() {
+            os.write_string(2, &self.ipns_sender)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -2000,14 +2000,14 @@ impl ::protobuf::Message for Sender {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
-                    "ipfs_topic",
-                    |m: &Sender| { &m.ipfs_topic },
-                    |m: &mut Sender| { &mut m.ipfs_topic },
+                    "ipns_layer",
+                    |m: &Sender| { &m.ipns_layer },
+                    |m: &mut Sender| { &mut m.ipns_layer },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
-                    "ipns_client",
-                    |m: &Sender| { &m.ipns_client },
-                    |m: &mut Sender| { &mut m.ipns_client },
+                    "ipns_sender",
+                    |m: &Sender| { &m.ipns_sender },
+                    |m: &mut Sender| { &mut m.ipns_sender },
                 ));
                 ::protobuf::reflect::MessageDescriptor::new::<Sender>(
                     "Sender",
@@ -2031,8 +2031,8 @@ impl ::protobuf::Message for Sender {
 
 impl ::protobuf::Clear for Sender {
     fn clear(&mut self) {
-        self.clear_ipfs_topic();
-        self.clear_ipns_client();
+        self.clear_ipns_layer();
+        self.clear_ipns_sender();
         self.unknown_fields.clear();
     }
 }
@@ -4026,8 +4026,8 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x02\x18\0\"Z\n\x13GenerateMessageInfo\x12\x14\n\x08template\x18\x01\x20\
     \x01(\tB\x02\x18\0\x12\x10\n\x04args\x18\x02\x20\x03(\x0cB\x02\x18\0\x12\
     \x1b\n\x06schema\x18\x03\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\"9\n\x06Sen\
-    der\x12\x16\n\nipfs_topic\x18\x01\x20\x01(\tB\x02\x18\0\x12\x17\n\x0bipn\
-    s_client\x18\x02\x20\x01(\tB\x02\x18\0\"*\n\x0bDestination\x12\x1b\n\x06\
+    der\x12\x16\n\nipns_layer\x18\x01\x20\x01(\tB\x02\x18\0\x12\x17\n\x0bipn\
+    s_sender\x18\x02\x20\x01(\tB\x02\x18\0\"*\n\x0bDestination\x12\x1b\n\x06\
     schema\x18\x01\x20\x01(\x0b2\x07.SchemaB\x02\x18\0\"!\n\x07VecData\x12\
     \x16\n\x03vec\x18\x01\x20\x03(\x0b2\x05.DataB\x02\x18\0\"-\n\rVecModuleI\
     nfo\x12\x1c\n\x03vec\x18\x01\x20\x03(\x0b2\x0b.ModuleInfoB\x02\x18\0\"'\
