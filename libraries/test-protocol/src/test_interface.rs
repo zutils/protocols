@@ -33,11 +33,11 @@ impl CommonModule for TestInterface {
         }
     }
 
-    fn handle_raw(&self, data: &Data) -> Result<VecData, Error> {
+    fn handle_raw(&self, data: &Data) -> Result<RpcData, Error> {
         let (schema, test) = data.unwrap::<test::Test>()?;
         log::debug!("Received Test Message: ({:?},{:?})", schema, test);
 
-        let ret = VecData::new();
+        let ret = RpcData::new();
         Ok(ret)
     }
 

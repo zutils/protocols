@@ -1,4 +1,4 @@
-use crate::{Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData, GenerateMessageInfo};
+use crate::{Destination, RpcData, VecModuleInfo, Data, VecRpcData, GenerateMessageInfo};
 use failure::Error;
 
 pub trait CommonModule {
@@ -6,7 +6,7 @@ pub trait CommonModule {
 
     fn generate_message(&self, p: &GenerateMessageInfo) -> Result<Data, Error>;
 
-    fn handle_raw(&self, p: &Data) -> Result<VecData, Error>;
+    fn handle_raw(&self, p: &Data) -> Result<RpcData, Error>;
 
     fn receive_rpc_as_client(&self, p: &RpcData) -> Result<VecRpcData, Error>;
 

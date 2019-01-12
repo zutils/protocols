@@ -2,7 +2,7 @@
 #![allow(non_snake_case)]
 
 use super::transport::{DataType, Destination, RequestType, RpcData, Transport, VecModuleInfo, 
-    VecData, Data, VecRpcData, GenerateMessageInfo, DataType_oneof_result};
+    Data, VecRpcData, GenerateMessageInfo, DataType_oneof_result};
 
 use crate::propagator::Propagator;
 use crate::common::CommonModule;
@@ -47,7 +47,7 @@ pub trait TransportToModuleGlue: CommonModule {
     fn handle_raw_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
         let msg = transport.get_payload().get_data();
         let module_ret = self.handle_raw(msg)?;
-        let result = DataType_oneof_result::vecdata(module_ret);
+        let result = DataType_oneof_result::rpcdata(module_ret);
         let ret = TransportResponse::create_Transport_result(result);
         Ok(vec![ret])
     }
@@ -94,11 +94,11 @@ pub trait ModuleToTransportGlue: Propagator {
     }
 
     // handle of straight data is special because the data message contains the receiver.
-    fn handle_raw(&self, data: Data) -> Result<VecData, Error> { 
+    fn handle_raw(&self, data: Data) -> Result<RpcData, Error> { 
         log::debug!("Propagating handle_raw({:?})", data);
         let transport = TransportRequest::create_HANDLE_RAW(data);
         let transport_results = self.propagate_transport(&transport);
-        TransportCombiner::combine_to_VecData(transport_results)
+        TransportCombiner::combine_to_RpcData(transport_results)
     }
 
     fn receive_rpc_as_client(&self, data: RpcData) -> Result<VecRpcData, Error> {
