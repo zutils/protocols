@@ -33,14 +33,6 @@ impl CommonModule for TestInterface {
         }
     }
 
-    fn handle_raw(&self, data: &Data) -> Result<RpcData, Error> {
-        let (schema, test) = data.unwrap::<test::Test>()?;
-        log::debug!("Received Test Message: ({:?},{:?})", schema, test);
-
-        let ret = RpcData::new();
-        Ok(ret)
-    }
-
     fn receive_rpc_as_client(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
         Err(failure::format_err!("No Trusted Rpc for {:?}", SCHEMA_URL))
     }

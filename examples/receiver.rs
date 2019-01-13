@@ -2,7 +2,7 @@ use std::net::UdpSocket;
 use std::path::PathBuf;
 
 use protocols::pluginhandler::{PluginHandler, DynamicLibraryLoader};
-use protocols::{Data, ModuleToTransportGlue};
+use protocols::{RpcData, ModuleToTransportGlue};
 
 fn main() -> Result<(), failure::Error> {
     // Initialize logging
@@ -21,11 +21,11 @@ fn main() -> Result<(), failure::Error> {
 
     // Convert received bytes to a Data type.
     let received_data = &buf[0..byte_count];
-    let data: Data = protobuf::parse_from_bytes(&received_data)?; 
+    let data: RpcData = protobuf::parse_from_bytes(&received_data)?; 
 
-    // Propogate through the handler tree to find a module matching the schema, and pass the generation info to it.
-    // Note that we do not pass in a schema for data as the data message already contains the schema it is supposed to be used for.
-    handler.handle_raw(data)?;
+    // Propogate through the handler tree to find a module matching the schema.
+    // Note that we do not pass in a schema for data as the data structure already contains the schema it is supposed to be used for.
+    handler.receive_rpc_as_client(data)?;
 
     Ok(())
 }

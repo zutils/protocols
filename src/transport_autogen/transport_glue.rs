@@ -20,7 +20,6 @@ pub trait TransportToModuleGlue: CommonModule {
         match transport.request_type {
             RequestType::GET_INFO => self.get_info_glue(transport),
             RequestType::GENERATE_MESSAGE => self.generate_message_glue(transport),
-            RequestType::HANDLE_RAW => self.handle_raw_glue(transport),
             RequestType::RECEIVE_RPC_AS_CLIENT => self.receive_rpc_as_client_glue(transport),
             RequestType::RECEIVE_RPC_AS_SERVER => self.receive_rpc_as_server_glue(transport),
             RequestType::RECEIVE_PUBLIC_RPC => self.receive_public_rpc_glue(transport),
@@ -40,14 +39,6 @@ pub trait TransportToModuleGlue: CommonModule {
         let msg = transport.get_payload().get_generatemessageinfo();
         let module_ret = self.generate_message(msg)?;
         let result = DataType_oneof_result::data(module_ret);
-        let ret = TransportResponse::create_Transport_result(result);
-        Ok(vec![ret])
-    }
-
-    fn handle_raw_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-        let msg = transport.get_payload().get_data();
-        let module_ret = self.handle_raw(msg)?;
-        let result = DataType_oneof_result::rpcdata(module_ret);
         let ret = TransportResponse::create_Transport_result(result);
         Ok(vec![ret])
     }
@@ -91,14 +82,6 @@ pub trait ModuleToTransportGlue: Propagator {
         let transport = TransportRequest::create_GENERATE_MESSAGE(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_Data(transport_results)
-    }
-
-    // handle of straight data is special because the data message contains the receiver.
-    fn handle_raw(&self, data: Data) -> Result<RpcData, Error> { 
-        log::debug!("Propagating handle_raw({:?})", data);
-        let transport = TransportRequest::create_HANDLE_RAW(data);
-        let transport_results = self.propagate_transport(&transport);
-        TransportCombiner::combine_to_RpcData(transport_results)
     }
 
     fn receive_rpc_as_client(&self, data: RpcData) -> Result<VecRpcData, Error> {
@@ -149,15 +132,6 @@ impl TransportRequest {
         let result = DataType_oneof_result::generatemessageinfo(data);
         let mut transport = TransportRequest::create_Transport_result(result);
         transport.set_request_type(RequestType::GENERATE_MESSAGE);
-        transport.set_destination(destination);
-        transport
-    }
-
-    pub fn create_HANDLE_RAW(data: Data) -> Transport {
-        let destination = data.get_schema().clone();
-        let result = DataType_oneof_result::data(data);
-        let mut transport = TransportRequest::create_Transport_result(result);
-        transport.set_request_type(RequestType::HANDLE_RAW);
         transport.set_destination(destination);
         transport
     }
