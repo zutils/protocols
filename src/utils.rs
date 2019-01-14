@@ -63,6 +63,14 @@ pub fn generate_message_info(schema: Schema, template: &str, args: Vec<Vec<u8>>)
 /// Helper function for creation of RpcData
 /// Yes - I know that we are taking a Vec instead of a [u8]. This is so that the function doesn't call to_vec().
 pub fn generate_rpc(schema: Schema, method_name: &str, serialized_data: Vec<u8>) -> RpcData {
+    /*message RpcData {
+        string method_name = 1;
+        bytes serialized_rpc_arg = 2;
+        Schema schema = 3;
+        RpcData return = 4;
+        Sender sender = 5;
+    }*/
+    // TODO: update this function with the comment above.
     let mut rpc = RpcData::default();
     rpc.set_method_name(method_name.to_string());
     rpc.set_schema(schema);
