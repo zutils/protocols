@@ -15,7 +15,7 @@ pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<Path
 	customize.serde_derive = Some(true);
 
 	let out_dir = out_dir(&proto_filename);
-	std::fs::create_dir_all(out_dir.clone())?;
+	std::fs::create_dir_all(&out_dir)?;
 
 	let args = pcp::Args {
 		out_dir: &pathbuf_to_string(&out_dir)?,
@@ -92,6 +92,27 @@ pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
     Ok(hash)
 }
 
+pub fn download_schema_from_ipfs(schema_name: &str, schema_ipfs_hash: &str) -> Result<PathBuf, Error> {
+	log::debug!("Downloading schema {:?}...", schema_ipfs_hash);
+	let schema_data = resolve_ipfs(schema_ipfs_hash)?;
+
+	// TODO: Handle files of other protocols
+	let schema_path = format!("./schema/{}.proto", schema_name);
+	let schema_path = PathBuf::from(schema_path);
+	log::debug!("Writing schema to {:?}", schema_path);
+	write_to_file(&schema_path, std::str::from_utf8(&schema_data)?)?;
+	log::debug!("...Finished downloading and saving schema.");
+	Ok(schema_path)
+}
+
+fn resolve_ipfs(ipfs: &str) -> Result<Vec<u8>, Error> {
+	let url = format!("http://localhost:8080/ipfs/{}", ipfs);
+	log::trace!("Requesting {:?}...", url);
+	let bytes = reqwest::get(&url)?.text()?.into_bytes();
+	log::trace!("...Received {:?}", bytes);
+	Ok(bytes)
+}
+
 pub fn write_schema_url(schema_path: &PathBuf, schema_url: &str) -> Result<PathBuf, Error> {
 	let schema_link_path = format!("./schema_urls/{}.txt", base_name(schema_path));
 	let schema_link_path = PathBuf::from(schema_link_path);
@@ -121,9 +142,18 @@ pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(), Error>) {
 pub fn write_to_file(new_file: &PathBuf, contents: &str) -> Result<(), Error> {
 	use std::io::Write;
 
+	create_necessary_path_from_file_name(new_file)?;
+
 	log::info!("Writing file: {:?}", new_file);
 	let mut file = File::create(new_file)?;
 	file.write_all(contents.as_bytes())?;
+	Ok(())
+}
+
+fn create_necessary_path_from_file_name(file_path: &PathBuf) -> Result<(), Error> {
+	let mut just_the_path = file_path.clone();
+	just_the_path.pop();
+	std::fs::create_dir_all(just_the_path)?;
 	Ok(())
 }
 
