@@ -3,5 +3,6 @@
 libraries/test-protocol/target
 Cargo.lock
 .vscode/
-./src/*_autogen/transport.rs
+
+./src/*_autogen/*
 ./libraries/*/src/*_autogen/*
