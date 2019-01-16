@@ -29,7 +29,26 @@ pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<Path
 	let out_file = get_protobuf_generated_file(proto_filename);
 	log::info!("Protoc ran on {:?} and created {:?}", proto_filename, out_file);
 
+	create_mod_file(&out_dir, &base_name(&out_file))?;
+
 	Ok(out_file)
+}
+
+fn create_mod_file(out_dir: &PathBuf, base_name: &str) -> Result<(), Error> {
+	log::info!("Creating mod file for {:?}...", base_name);
+
+	let pub_mod_text = format!("pub mod {};", base_name);
+
+	let out_file = out_dir.join("mod.rs");
+
+	if !out_file.exists() {
+		write_to_file(&out_file, pub_mod_text + "\n")?;
+	} else 	if file_missing_text(&out_file, &pub_mod_text)? {
+		append_to_file(&out_file, pub_mod_text + "\n")?;
+	}
+
+	log::info!("...finished creating mod file.");
+	Ok(())
 }
 
 /// Call protoc on protobuffer and create only the rpc code
@@ -100,7 +119,7 @@ pub fn download_schema_from_ipfs(schema_name: &str, schema_ipfs_hash: &str) -> R
 	let schema_path = format!("./schema/{}.proto", schema_name);
 	let schema_path = PathBuf::from(schema_path);
 	log::debug!("Writing schema to {:?}", schema_path);
-	write_to_file(&schema_path, std::str::from_utf8(&schema_data)?)?;
+	write_to_file(&schema_path, std::str::from_utf8(&schema_data)?.to_string())?;
 	log::debug!("...Finished downloading and saving schema.");
 	Ok(schema_path)
 }
@@ -116,14 +135,28 @@ fn resolve_ipfs(ipfs: &str) -> Result<Vec<u8>, Error> {
 pub fn write_schema_url(schema_path: &PathBuf, schema_url: &str) -> Result<PathBuf, Error> {
 	let schema_link_path = format!("./schema_urls/{}.txt", base_name(schema_path));
 	let schema_link_path = PathBuf::from(schema_link_path);
-	write_to_file(&schema_link_path, &schema_url)?;
+	write_to_file(&schema_link_path, schema_url.to_string())?;
 	Ok(schema_link_path)
+}
+
+pub fn file_missing_text(path: &PathBuf, text: &str) -> Result<bool, Error> {
+	log::debug!("Loading file: {:?} and testing for {:?}", path, text);
+	let file_data = ::std::fs::read_to_string(path)?;
+	Ok(!file_data.contains(text))
+}
+
+pub fn append_to_file(path: &PathBuf, text: String) -> Result<(), Error> {
+	let mut file_data = ::std::fs::read_to_string(path)?;
+	file_data += &text;
+
+	write_to_file(path, file_data)?;
+	Ok(())
 }
 
 pub fn modify_file(path: &PathBuf, pretext: &str, posttext: &str) -> Result<(), Error> {
 	let file_data = ::std::fs::read_to_string(path)?;
 	let modified_file = file_data.replace(pretext, posttext);
-	write_to_file(path, &modified_file)?;
+	write_to_file(path, modified_file)?;
 	Ok(())
 }
 
@@ -139,7 +172,7 @@ pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(), Error>) {
     }
 }
 
-pub fn write_to_file(new_file: &PathBuf, contents: &str) -> Result<(), Error> {
+pub fn write_to_file(new_file: &PathBuf, contents: String) -> Result<(), Error> {
 	use std::io::Write;
 
 	create_necessary_path_from_file_name(new_file)?;
