@@ -71,22 +71,6 @@ impl TransportCombiner {
         Ok(item)
     }
 
-    pub fn combine_to_RpcData(results: Vec<Transport>) -> Result<RpcData, Error> {
-        let results = TransportCombiner::filter_out_and_print_errors(results);
-
-        let mut infos: Vec<RpcData> = results.into_iter()
-            .filter(|payload| payload.has_rpcdata() )
-            .map(|mut payload| payload.take_rpcdata() )
-            .collect();
-
-        if infos.len() > 1 {
-            log::debug!("combine_to_RpcData(...) has more than one result! Returning first one.")
-        } 
-
-        let item = infos.pop().ok_or(failure::format_err!("No response for rpcdata request!"))?;
-        Ok(item)
-    }
-
     pub fn combine_to_VecData(results: Vec<Transport>) -> Result<VecData, Error> {
         let results = TransportCombiner::filter_out_and_print_errors(results);
 
