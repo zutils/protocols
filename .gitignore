@@ -1,7 +1,7 @@
 /target
 **/*.rs.bk
 libraries/test-protocol/target
-libraries/root-message/target
 Cargo.lock
-builder/target
 .vscode/
+./src/transport_autogen/transport.rs
+./libraries/test-protocol/src/test_autogen/*
