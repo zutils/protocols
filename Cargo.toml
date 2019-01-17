@@ -33,10 +33,13 @@ fern = { version = "0.5.7", features = ["colored"] }
 failure = "0.1.5"
 protoc-rust-grpc = "0.6.1"
 protobuf-codegen-pure = "2.2.4"
-hyper = "0.12.20"
+protobuf = "2.2.4"
+hyper = "0.12.21"
 ipfs-api = "0.5.0-alpha2"
 log = "0.4.6"
 reqwest = "0.9.8"
+lazy_static = "1.2.0"
+fern = { version = "0.5.7", features = ["colored"] }
 
 [badges]
 travis-ci = { repository = "zutils/protocols" }

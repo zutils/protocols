@@ -1,4 +1,6 @@
 pub mod buildfunctions;
+pub mod utils;
+pub mod transport_autogen;
 
 use failure::Error;
 use std::path::PathBuf;
@@ -12,7 +14,8 @@ fn create_protobuf(proto_path: &PathBuf) -> Result<(), Error> {
 	Ok(())
 }
 
-fn main()  {
-	protocols::utils::initialize_standard_logging("")?;
+fn main() -> Result<(), Error>  {
+	utils::initialize_standard_logging("")?;
 	buildfunctions::for_all_in_dir("./schema/", |path| create_protobuf(path));
+	Ok(())
 }
