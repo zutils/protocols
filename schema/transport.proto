@@ -37,12 +37,6 @@ message ModuleInfo {
     string name = 2;
 }
 
-message GenerateMessageInfo {
-    string template = 1;
-    repeated bytes args = 2;
-    Schema schema = 3;
-}
-
 message Sender {
     string ipns_layer = 1;
     string ipns_sender = 2;
@@ -60,10 +54,9 @@ message VecRpcData { repeated RpcData vec = 1; }
 enum RequestType {
     NONE = 0;
     GET_INFO = 1;
-    GENERATE_MESSAGE = 2;
-    RECEIVE_RPC_AS_CLIENT = 3;
-    RECEIVE_RPC_AS_SERVER = 4;
-    RECEIVE_PUBLIC_RPC = 5;
+    RECEIVE_RPC_AS_CLIENT = 2;
+    RECEIVE_RPC_AS_SERVER = 3;
+    RECEIVE_PUBLIC_RPC = 4;
 }
 
 
@@ -74,10 +67,9 @@ message DataType {
         Data data = 2;
         VecModuleInfo vecmoduleinfo = 3;
         RpcData rpcdata = 4;
-        GenerateMessageInfo generatemessageinfo = 5;
-        Destination destination = 6;
-        VecData vecdata= 7;
-        VecRpcData vecrpcdata = 8;
+        Destination destination = 5;
+        VecData vecdata= 6;
+        VecRpcData vecrpcdata = 7;
     }
 }
 
@@ -92,7 +84,6 @@ message VecTransport { repeated Transport vec = 1; }
 
 service CommonModule {
     rpc get_info(Destination) returns (VecModuleInfo);
-    rpc generate_message(GenerateMessageInfo) returns (Data);
     rpc receive_rpc_as_client(RpcData) returns (VecRpcData);
     rpc receive_rpc_as_server(RpcData) returns (VecRpcData);
     rpc receive_public_rpc(RpcData) returns (VecRpcData);

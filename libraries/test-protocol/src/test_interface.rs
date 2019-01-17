@@ -1,7 +1,7 @@
 use crate::test_autogen::test;
 use failure::Error;
-use protocols::{CommonModule, Data, ModuleInfo, VecModuleInfo, Destination, GenerateMessageInfo, VecRpcData, RpcData};
-use protocols::utils::{ToDataConverter, schema_ipfs_from_str};
+use protocols::{CommonModule, Data, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
+use protocols::utils::{schema_ipfs_from_str};
 
 static SCHEMA_URL: &str = include_str!("../schema_urls/test.txt");
 
@@ -11,30 +11,15 @@ impl CommonModule for TestInterface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, Error> {
         let mut info = ModuleInfo::new();
         info.set_name("Test".to_string());
-        info.set_schema(schema_ipfs_from_str(SCHEMA_URL)); // Future: Perhaps return multiple modules and append "/Test" to SCHEMA_URL
+        info.set_schema(schema_ipfs_from_str(SCHEMA_URL));
         
         let mut ret = VecModuleInfo::new();
         ret.vec = protobuf::RepeatedField::from_vec(vec![info]);
         Ok(ret)
     }
 
-    fn generate_message(&self, data: &GenerateMessageInfo) -> Result<Data, Error> {
-        use std::str;
-        let template = data.get_template();
-        let args = data.get_args();
-        match template {
-            "Test" => {
-                let name = str::from_utf8(&(args[0]))?;
-                let data = str::from_utf8(&(args[1]))?;
-                let msg = generate_test(name, data)?;
-                Ok(msg.to_Data(&schema_ipfs_from_str(SCHEMA_URL))?)
-            },
-            _ => Err(failure::format_err!("Unrecognized template {:?}. 'Test' available.", template)),
-        }
-    }
-
-    fn receive_rpc_as_client(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
-        Err(failure::format_err!("No Trusted Rpc for {:?}", SCHEMA_URL))
+    fn receive_rpc_as_client(&self, data: &RpcData) -> Result<VecRpcData, Error> {
+        ClientRPCHandler::handle(data)
     }
 
     fn receive_rpc_as_server(&self, _data: &RpcData) -> Result<VecRpcData, Error> {
@@ -46,9 +31,25 @@ impl CommonModule for TestInterface {
     }
 }
 
-fn generate_test(name: &str, data: &str) -> Result<test::Test, Error> {   
-    let mut structure = test::Test::new();
-    structure.set_name(name.to_string());
-    structure.set_data(data.to_string());
-    Ok(structure)
+struct ClientRPCHandler;
+impl ClientRPCHandler {
+    fn handle(data: &RpcData) -> Result<VecRpcData, Error> {
+        let additional_rpcs = match data.method_name.as_str() {
+            "ClientRPC/receive_test" => {
+                let arg = protobuf::parse_from_bytes(data.get_serialized_rpc_arg())?;
+                let _empty = ClientRPCHandler::receive_test(arg);
+                Vec::new()
+            },
+            _ => Vec::new(),
+        };
+
+        let mut ret = VecRpcData::new();
+        ret.vec = protobuf::RepeatedField::from_vec(additional_rpcs);
+        Ok(ret)
+    }
+
+    fn receive_test(data: Data) -> test::Empty {
+        log::info!("Recieved test data {:?}", data);
+        test::Empty::new()
+    }
 }

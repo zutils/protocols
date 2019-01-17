@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use crate::{Destination, RpcData, Transport, VecModuleInfo, Data, VecRpcData, GenerateMessageInfo};
+use crate::{Destination, RpcData, Transport, VecModuleInfo, VecRpcData};
 use crate::propagator::Propagator;
 use crate::common::CommonModule;
 use crate::transportresponse::{TransportResponse, TransportCombiner};
@@ -18,7 +18,6 @@ pub trait TransportToModuleGlue: CommonModule {
         // Pass on transport to proper function
         match transport.request_type {
             RequestType::GET_INFO => self.get_info_glue(transport),
-            RequestType::GENERATE_MESSAGE => self.generate_message_glue(transport),
             RequestType::RECEIVE_RPC_AS_CLIENT => self.receive_rpc_as_client_glue(transport),
             RequestType::RECEIVE_RPC_AS_SERVER => self.receive_rpc_as_server_glue(transport),
             RequestType::RECEIVE_PUBLIC_RPC => self.receive_public_rpc_glue(transport),
@@ -30,14 +29,6 @@ pub trait TransportToModuleGlue: CommonModule {
         let msg = transport.get_payload().get_destination();
         let module_ret = self.get_info(msg)?;
         let result = DataType_oneof_result::vecmoduleinfo(module_ret);
-        let ret = TransportResponse::create_Transport_result(result);
-        Ok(vec![ret])
-    }
-
-    fn generate_message_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-        let msg = transport.get_payload().get_generatemessageinfo();
-        let module_ret = self.generate_message(msg)?;
-        let result = DataType_oneof_result::data(module_ret);
         let ret = TransportResponse::create_Transport_result(result);
         Ok(vec![ret])
     }
@@ -74,13 +65,6 @@ pub trait ModuleToTransportGlue: Propagator {
         let transport = TransportRequest::create_GET_INFO(data);
         let transport_results = self.propagate_transport(&transport);
         TransportCombiner::combine_to_VecModuleInfo(transport_results)
-    }
-
-    fn generate_message(&self, data: GenerateMessageInfo) -> Result<Data, Error> { 
-        log::debug!("Propagating generate_message({:?})", data);
-        let transport = TransportRequest::create_GENERATE_MESSAGE(data);
-        let transport_results = self.propagate_transport(&transport);
-        TransportCombiner::combine_to_Data(transport_results)
     }
 
     fn receive_rpc_as_client(&self, data: RpcData) -> Result<VecRpcData, Error> {
@@ -121,16 +105,7 @@ impl TransportRequest {
         let destination = data.get_schema().clone();
         let result = DataType_oneof_result::destination(data);
         let mut transport = TransportRequest::create_Transport_result(result);
-        transport.set_request_type(RequestType::GENERATE_MESSAGE);
-        transport.set_destination(destination);
-        transport
-    }
-
-    pub fn create_GENERATE_MESSAGE(data: GenerateMessageInfo) -> Transport {
-        let destination = data.get_schema().clone();
-        let result = DataType_oneof_result::generatemessageinfo(data);
-        let mut transport = TransportRequest::create_Transport_result(result);
-        transport.set_request_type(RequestType::GENERATE_MESSAGE);
+        transport.set_request_type(RequestType::GET_INFO);
         transport.set_destination(destination);
         transport
     }
