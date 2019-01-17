@@ -13,5 +13,6 @@ fn create_protobuf(proto_path: &PathBuf) -> Result<(), Error> {
 }
 
 fn main()  {
+	protocols::utils::initialize_standard_logging("")?;
 	buildfunctions::for_all_in_dir("./schema/", |path| create_protobuf(path));
 }
