@@ -8,3 +8,7 @@ Cargo.lock
 /libraries/*/src/*_autogen/*
 /example/src/*_autogen/*
 /src/*_autogen/*
+
+/libraries/*/schema_urls/*
+/example/schema_urls/*
+/schema_urls/*
