@@ -10,7 +10,6 @@ failure = "*"
 protobuf = "*"
 protocols = { path = "../" }
 rand = "*"
-base64 = "*"
 test-protocol = { path = "../libraries/test-protocol" }
 
 [build-dependencies]
@@ -18,6 +17,7 @@ log = "*"
 failure = "*"
 protobuf = "*"
 protocols = { path = "../" }
+test-protocol = { path = "../libraries/test-protocol" }
 
 [lib]
 name = "selflib"
