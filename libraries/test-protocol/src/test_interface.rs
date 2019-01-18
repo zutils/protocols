@@ -1,6 +1,6 @@
 use crate::test_autogen::test;
 use failure::Error;
-use protocols::{CommonModule, Data, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
+use protocols::{CommonModule, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
 use protocols::utils::{schema_ipfs_from_str};
 
 static SCHEMA_URL: &str = include_str!("../schema_urls/test.txt");
@@ -48,7 +48,7 @@ impl ClientRPCHandler {
         Ok(ret)
     }
 
-    fn receive_test(data: Data) -> test::Empty {
+    fn receive_test(data: test::Test) -> test::Empty {
         log::info!("Recieved test data {:?}", data);
         test::Empty::new()
     }
