@@ -21,7 +21,6 @@ fn main() -> Result<(), failure::Error> {
 
     // Convert received bytes to a Data type.
     let received_data = &buf[0..byte_count];
-    let received_data = base64::decode(received_data)?;
     let data: RpcData = protobuf::parse_from_bytes(&received_data)?; 
 
     // Propogate through the handler tree to find a module matching the schema.

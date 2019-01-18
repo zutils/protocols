@@ -23,8 +23,8 @@ fn main() -> Result<(), failure::Error> {
     
     // Send to localhost. Use the receiver binary to receive this data.
     log::info!("Sending: {:?}", rpc);
-    let send_data = base64::encode(&rpc.write_to_bytes()?);
-    socket.send_to(send_data.as_bytes(), "127.0.0.1:23462")?; // Port 23462 aligns with the receive port in the receiver program
+    let send_data = rpc.write_to_bytes()?;
+    socket.send_to(&send_data, "127.0.0.1:23462")?; // Port 23462 aligns with the receive port in the receiver program
 
     Ok(())
 }
