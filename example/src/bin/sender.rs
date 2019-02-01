@@ -11,7 +11,7 @@ fn main() -> Result<(), failure::Error> {
     test.set_name("Test Name".to_string());
     test.set_data("Test Data".to_string());
 
-    let schema = protocols::utils::schema_ipfs_from_str(include_str!("../../../libraries/test-protocol/schema_urls/test.txt"));
+    let schema: protocols::SchemaIdentifier = include_str!("../../../libraries/test-protocol/schema_urls/test.txt");
     let rpc = protocols::utils::generate_rpc(schema, "ClientRPC/receive_test", test.write_to_bytes()?);
 
     // Connect to localhost server

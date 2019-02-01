@@ -1,7 +1,6 @@
 use crate::test_autogen::test;
 use failure::Error;
 use protocols::{CommonModule, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
-use protocols::utils::{schema_ipfs_from_str};
 
 static SCHEMA_URL: &str = include_str!("../schema_urls/test.txt");
 
@@ -11,7 +10,7 @@ impl CommonModule for TestInterface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, Error> {
         let mut info = ModuleInfo::new();
         info.set_name("Test".to_string());
-        info.set_schema(schema_ipfs_from_str(SCHEMA_URL));
+        info.set_schema(SCHEMA_URL);
         
         let mut ret = VecModuleInfo::new();
         ret.vec = protobuf::RepeatedField::from_vec(vec![info]);

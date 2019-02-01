@@ -4,47 +4,49 @@ syntax = "proto3";
 //  It will allow personal modules to be sent to dynamic libraries, webasm, and locally
 //  Please NOTE: This is an INSECURE method of transport. All destinations for these messages should be FULLY TRUSTED!
 
-message Schema {
-    oneof data {
-        string URL = 2;
-        string Ipfs = 3;
-        string Ipns = 4;
-    }
+message SchemaIdentifier {
+    string id = 1;
 }
 
-message UUID { string id = 1; }
-
-message Error { string error = 1; }
-
-// Include data and the schema that can decode it.
-message Data {
-    Schema schema = 1;
-    bytes serialized_data = 2;
-    Sender sender = 3;
-}
-
-// Include the method name and the serialized gRPC data.
-message RpcData {
-    string method_name = 1;
-    bytes serialized_rpc_arg = 2;
-    Schema schema = 3;
-    RpcData return = 4;
-    Sender sender = 5;
-}
-
-message ModuleInfo {
-    Schema schema = 1;
-    string name = 2;
+message PeerIdentifier {
+    string id = 1;
 }
 
 message Sender {
     string ipns_layer = 1;
-    string ipns_sender = 2;
+    PeerIdentifier ipns_sender = 2;
+}
+
+message Error { string error = 1; }
+
+// Include data and the schema that can deserialize it.
+message Data {
+    SchemaIdentifier schema = 1;
+    bytes serialized_data = 2;
+    Sender sender = 3;
+}
+
+// Include the method name and the serialized RPC data.
+message RpcData {
+    // name, data, and deserializer are the three things we need as a destination for RpcData
+    string method_name = 1;
+    bytes serialized_rpc_arg = 2;
+    SchemaIdentifier schema = 3;
+
+    // The RpcData may hold all children and where to send that data. 
+    // If we return to the caller function, we need to identify it.
+    RpcData next_path = 4;
+    Sender sender = 5;
+}
+
+message ModuleInfo {
+    SchemaIdentifier schema = 1;
+    string name = 2;
 }
 
 // Special case for functions that would normally take Destination
 message Destination {
-    Schema schema = 1;
+    SchemaIdentifier schema = 1;
 }
 
 message VecData { repeated Data vec = 1; }
@@ -75,7 +77,7 @@ message DataType {
 
 // Any module that wants to communicate to another module in it's tree must send and receive "Transports"
 message Transport {
-    Schema destination = 1;
+    SchemaIdentifier destination = 1;
     DataType payload = 2;
     RequestType request_type = 3;
 }

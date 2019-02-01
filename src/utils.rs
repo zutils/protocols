@@ -1,26 +1,27 @@
 #![allow(non_snake_case)]
 
-use crate::transport_autogen::transport::{ Schema, Schema_oneof_data, Data, RpcData};
+use crate::transport_autogen::transport::{ SchemaIdentifier, Data, RpcData};
 
 use failure::Error;
 
-pub trait AsStringer {
-    fn as_string(&self) -> &str;
-}
-
-impl AsStringer for Schema {
-    fn as_string(&self) -> &str {
-        match self.data {
-            Some(Schema_oneof_data::URL(ref m)) => m,
-            Some(Schema_oneof_data::Ipfs(ref m)) => m,
-            Some(Schema_oneof_data::Ipns(ref m)) => m,
-            None => "",
-        } 
+impl ToString for SchemaIdentifier {
+    fn to_string(&self) -> String {
+        self.get_id().to_string()
     }
 }
 
+impl From<&str> for SchemaIdentifier {
+    fn from(f: &str) -> SchemaIdentifier {
+        let mut ret = SchemaIdentifier::new();
+        ret.id = f.to_string();
+        ret
+    }
+}
+
+// TODO: Implement TryInto for things such as ToDataConverter
+
 pub trait ToDataConverter: protobuf::Message {
-    fn to_Data(&self, schema: &Schema) -> Result<Data, Error> {
+    fn to_Data(&self, schema: &SchemaIdentifier) -> Result<Data, Error> {
         let serialized_data = self.write_to_bytes()?;
 
         let mut ret = Data::new();
@@ -32,18 +33,12 @@ pub trait ToDataConverter: protobuf::Message {
 
 impl<T> ToDataConverter for T where T: protobuf::Message {}
 
-pub fn schema_ipfs_from_str(schema_str: &str) -> Schema {
-    let mut schema = Schema::new();
-    schema.set_Ipfs(schema_str.to_string());
-    schema
-}
-
 pub trait FromDataConverter {
-    fn unwrap<T: protobuf::Message>(&self) -> Result<(Schema, T), Error>;
+    fn unwrap<T: protobuf::Message>(&self) -> Result<(SchemaIdentifier, T), Error>;
 }
 
 impl FromDataConverter for Data {
-    fn unwrap<T: protobuf::Message>(&self) -> Result<(Schema, T), Error> {
+    fn unwrap<T: protobuf::Message>(&self) -> Result<(SchemaIdentifier, T), Error> {
         let schema = self.get_schema();
         let serialized_data = self.get_serialized_data();
         Ok((schema.to_owned(), protobuf::parse_from_bytes(serialized_data)?))
@@ -52,7 +47,7 @@ impl FromDataConverter for Data {
 
 /// Helper function for creation of RpcData
 /// Yes - I know that we are taking a Vec instead of a [u8]. This is so that the function doesn't call to_vec().
-pub fn generate_rpc(schema: Schema, method_name: &str, serialized_data: Vec<u8>) -> RpcData {
+pub fn generate_rpc(schema: SchemaIdentifier, method_name: &str, serialized_data: Vec<u8>) -> RpcData {
     let mut rpc = RpcData::default();
     rpc.set_method_name(method_name.to_string());
     rpc.set_schema(schema);

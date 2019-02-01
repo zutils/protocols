@@ -52,6 +52,6 @@ pub mod transport_glue;
 pub use crate::transportresponse::TransportResponse;
 pub use crate::transport_glue::{TransportToModuleGlue, ModuleToTransportGlue};
 pub use crate::common::CommonModule;
-pub use crate::transport_autogen::transport::{Transport, VecTransport, Schema, ModuleInfo, 
-                Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData};
+pub use crate::transport_autogen::transport::{Transport, VecTransport, SchemaIdentifier, ModuleInfo, 
+                Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData, PeerIdentifier};
 
