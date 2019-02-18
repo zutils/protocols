@@ -17,7 +17,7 @@ lazy_static! {
 #[no_mangle]
 pub extern fn init() {
     log::trace!("Inside dynamic library init()...");
-    if let Err(e) = protocols::utils::initialize_standard_logging("TEST-PROTOCOL|\t") {
+    if let Err(e) = protocols::logging::initialize_standard_logging("TEST-PROTOCOL|\t") {
         println!("{:?}", e); // What are we going to do - log it? lol
     }
     log::trace!("...Leaving dynamic library init()");

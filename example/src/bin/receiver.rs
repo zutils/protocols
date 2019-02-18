@@ -6,7 +6,7 @@ use protocols::{RpcData, ModuleToTransportGlue};
 
 fn main() -> Result<(), failure::Error> {
     // Initialize logging
-    protocols::utils::initialize_standard_logging("")?;
+    protocols::logging::initialize_standard_logging("")?;
 
     // Initialize plugin handler. The PluginHandler is ALSO our module root.
     let handler = PluginHandler::new();
@@ -21,7 +21,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Convert received bytes to a Data type.
     let received_data = &buf[0..byte_count];
-    let data: RpcData = protobuf::parse_from_bytes(&received_data)?; 
+    let data: RpcData = quick_protobuf::deserialize_from_slice(&received_data)?; 
 
     // Propogate through the handler tree to find a module matching the schema.
     // Note that we do not pass in a schema for data as the data structure already contains the schema it is supposed to be used for.

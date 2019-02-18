@@ -40,6 +40,8 @@
 //! plugins = "*"
 //! ```
 
+#![feature(try_from)]
+
 pub mod pluginhandler;
 pub mod buildfunctions;
 pub mod propagator;
@@ -47,6 +49,7 @@ pub mod transport_autogen;
 pub mod transportresponse;
 pub mod common;
 pub mod utils;
+pub mod logging;
 pub mod transport_glue;
 
 pub use crate::transportresponse::TransportResponse;

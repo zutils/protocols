@@ -1,18 +1,15 @@
 use std::net::UdpSocket;
 use rand::Rng;
-use protobuf::Message;
 use selflib::test_autogen::test;
 
 fn main() -> Result<(), failure::Error> {
     // Initialize logging
-    protocols::utils::initialize_standard_logging("")?;
+    protocols::logging::initialize_standard_logging("")?;
 
-    let mut test = test::Test::new();
-    test.set_name("Test Name".to_string());
-    test.set_data("Test Data".to_string());
+    let test = test::Test::new(Some("Test Name".into()), Some("Test Data".into()));
 
-    let schema: protocols::SchemaIdentifier = include_str!("../../../libraries/test-protocol/schema_urls/test.txt");
-    let rpc = protocols::utils::generate_rpc(schema, "ClientRPC/receive_test", test.write_to_bytes()?);
+    let schema: protocols::SchemaIdentifier = include_str!("../../../libraries/test-protocol/schema_urls/test.txt").into();
+    let rpc = protocols::utils::generate_rpc(schema, "ClientRPC/receive_test", quick_protobuf::serialize_into_vec(&test)?);
 
     // Connect to localhost server
     let port = rand::thread_rng().gen_range(1025, 65536);
@@ -23,7 +20,7 @@ fn main() -> Result<(), failure::Error> {
     
     // Send to localhost. Use the receiver binary to receive this data.
     log::info!("Sending: {:?}", rpc);
-    let send_data = rpc.write_to_bytes()?;
+    let send_data = quick_protobuf::serialize_into_vec(&rpc)?;
     socket.send_to(&send_data, "127.0.0.1:23462")?; // Port 23462 aligns with the receive port in the receiver program
 
     Ok(())

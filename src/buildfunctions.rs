@@ -1,75 +1,52 @@
 //! buildfunctions provides functions to be used in plugins' build.rs file.
-use protoc_rust_grpc as prg;
-use protobuf_codegen_pure as pcp;
 use failure::Error;
 use std::fs::File;	
 use std::path::PathBuf;
+use std::io::Write;
+
+fn generate_rpc<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
+    /* Example:
+        trait <service> {
+            fn <func>(&self, arg: &<arg>) -> Result<<ret>, failure::Error>;
+        }
+    */
+
+    writeln!(w, "\npub trait {SERVICE} {{", SERVICE = rpc.service_name)?;
+    for func in rpc.functions.iter() {
+        writeln!(w, "   fn {FUNC}(&self, arg: &{ARG}) -> std::result::Result<{RET}, failure::Error>;", 
+            FUNC = func.name, ARG = func.arg, RET = func.ret)?;
+    }
+    writeln!(w, "}}\n")?;
+
+    Ok(())
+}
 
 /// Call protoc on protobuffer and create non-rpc code
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
+	use pb_rs::types::Config;
 	log::info!("Building protobuf for {:?}", &proto_filename);
-
-	let path_str = proto_filename.to_str().ok_or(failure::format_err!("Cannot create str from PathBuf!"))?;
-
-	let mut customize = pcp::Customize::default();
-	customize.serde_derive = Some(true);
 
 	let out_dir = out_dir(&proto_filename);
 	std::fs::create_dir_all(&out_dir)?;
 
-	let args = pcp::Args {
-		out_dir: &pathbuf_to_string(&out_dir)?,
-		input: &[path_str],
-		includes: &["./schema"],
-		customize
-	};
-
-	pcp::run(args).expect("protoc");
-
 	let out_file = get_protobuf_generated_file(proto_filename);
-	log::info!("Protoc ran on {:?} and created {:?}", proto_filename, out_file);
 
-	create_mod_file(&out_dir, &base_name(&out_file))?;
+    let config = Config {
+        in_file: proto_filename.to_owned(),
+        out_file: out_file.clone(), 
+        single_module: true,
+        import_search_path: vec![PathBuf::from("./schema")],
+        no_output: false,
+        error_cycle: false,
+        headers: true,
+		dont_use_cow: true,
+        custom_struct_derive: vec!["derive_new::new".into()],
+        custom_rpc_generator: Box::new(|rpc, writer| generate_rpc(rpc, writer))
+    };
 
-	Ok(out_file)
-}
+    pb_rs::types::FileDescriptor::write_proto(&config).unwrap();
 
-fn create_mod_file(out_dir: &PathBuf, base_name: &str) -> Result<(), Error> {
-	log::info!("Creating mod file for {:?}...", base_name);
-
-	let pub_mod_text = format!("pub mod {};", base_name);
-
-	let out_file = out_dir.join("mod.rs");
-
-	if !out_file.exists() {
-		write_to_file(&out_file, pub_mod_text + "\n")?;
-	} else 	if file_missing_text(&out_file, &pub_mod_text)? {
-		append_to_file(&out_file, pub_mod_text + "\n")?;
-	}
-
-	log::info!("...finished creating mod file.");
-	Ok(())
-}
-
-/// Call protoc on protobuffer and create only the rpc code
-pub fn build_rust_rpc_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
-	log::info!("Building protobuf rpc for {:?}", &proto_filename);
-	let path_str = proto_filename.to_str().ok_or(failure::format_err!("Cannot create str from PathBuf!"))?;
-
-	let out_dir = out_dir(&proto_filename);
-
-	let args = prg::Args {
-		out_dir: &pathbuf_to_string(&out_dir)?,
-		input: &[path_str],
-		includes: &["./schema"],
-		rust_protobuf: false,
-		..Default::default()
-	};
-
-	prg::run(args).expect("protoc-rust-grpc");
-
-	let out_file = get_protobuf_rpc_generated_file(proto_filename);
-	log::info!("Protoc-rust-grpc ran on {:?} and created {:?}", proto_filename, out_file);
+	log::info!("Pb-rs ran on {:?} and created {:?}", proto_filename, out_file);
 
 	Ok(out_file)
 }
@@ -198,14 +175,6 @@ fn get_protobuf_generated_file(proto_filename: &PathBuf) -> PathBuf {
 	out_file
 }
 
-fn get_protobuf_rpc_generated_file(proto_filename: &PathBuf) -> PathBuf {
-	// Figure out the file that was generated.
-	let base_name = base_name(proto_filename);
-	let mut out_file = out_dir(&proto_filename);
-	out_file.push(format!("{}_grpc.rs", base_name));
-	out_file
-}
-
 fn base_name(protobuf_path: &PathBuf) -> String {
 	let base_name: String = protobuf_path.file_stem().unwrap().to_str().unwrap().to_string();
 	base_name
@@ -217,8 +186,4 @@ fn out_dir(protobuf_path: &PathBuf) -> PathBuf {
 	let base_name = base_name(protobuf_path);
 	dir.push(format!("{}_autogen", base_name));
 	dir
-}
-
-fn pathbuf_to_string(path: &PathBuf) -> Result<String, Error> {
-	Ok(path.to_str().ok_or(failure::format_err!("Cannot create str from PathBuf!"))?.to_string())
 }

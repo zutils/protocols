@@ -7,15 +7,16 @@ edition = "2018"
 [dependencies]
 log = "*"
 failure = "*"
-protobuf = "*"
+quick-protobuf = { path = "../../quick-protobuf/quick-protobuf" }
 protocols = { path = "../" }
 rand = "*"
 test-protocol = { path = "../libraries/test-protocol" }
+derive-new = "*"
 
 [build-dependencies]
 log = "*"
 failure = "*"
-protobuf = "*"
+quick-protobuf = { path = "../../quick-protobuf/quick-protobuf" }
 protocols = { path = "../" }
 test-protocol = { path = "../libraries/test-protocol" }
 

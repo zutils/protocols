@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use failure::Error;
 use notify::{Watcher, RecursiveMode, RawEvent, raw_watcher};
 use signals::{Signal, Emitter, Am};
-use protobuf::Message;
 
 use crate::{Transport, VecTransport, ModuleToTransportGlue};
 use crate::propagator::{Propagator, TransportNode};
@@ -36,20 +35,18 @@ trait CommonFFI {
 impl CommonFFI for libloading::Library {
     // TODO: Handle c-style ffi
     fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
-        use protobuf::Message;
-
         log::trace!("Calling FFI function 'propagate_ffi(...)'...");
 
-        let bytes = transport.write_to_bytes()?;
+        let bytes = quick_protobuf::serialize_into_vec(transport)?;
 
         let from_ffi = unsafe {
             let propagate: libloading::Symbol<unsafe extern fn(&[u8]) -> Vec<u8>> = self.get(b"propagate_ffi")?;
             propagate(&bytes)
         };
 
-        let ret: VecTransport = protobuf::parse_from_bytes(&from_ffi)?;
+        let ret: VecTransport = quick_protobuf::deserialize_from_slice(&from_ffi)?;
         log::trace!("...Received from FFI: {:?}", ret);
-        Ok(ret.vec.into_vec())
+        Ok(ret.vec)
     }
 
     fn call_ffi_init(&self) -> Result<(), Error> {
@@ -64,21 +61,21 @@ impl CommonFFI for libloading::Library {
 }
 
 pub fn ffi_handle_received_bytes(node: &TransportNode, bytes: &[u8]) -> Vec<u8> {
-    let mut ret = VecTransport::new();
+    let mut ret = VecTransport::default();
 
-    match protobuf::parse_from_bytes(bytes) {
+    match quick_protobuf::deserialize_from_slice::<Transport>(bytes) {
         Err(e) => {
             let transport = TransportResponse::create_Error(&format!("Cannot parse data! Possibly incorrect version. {:?}", e));
             ret.vec.push(transport);
         },
         Ok(transport) => {
-            let vectransport_data = node.propagate_transport(&transport);
-            ret.vec = protobuf::RepeatedField::from_vec(vectransport_data);
+            let mut vectransport_data: Vec<Transport> = node.propagate_transport(&transport);
+            ret.vec.append(&mut vectransport_data);
         },
     } 
 
-    // write_to_bytes returns a result - one that we cannot pass back. Fail as gracefully as we can :(
-    match ret.write_to_bytes() {
+    // serialize_into_vec returns a result - one that we cannot pass back. Fail as gracefully as we can :(
+    match quick_protobuf::serialize_into_vec(&ret) {
         Ok(bytes) => bytes.to_vec(),
         Err(e) => {
             log::error!("Cannot write VecTransport to bytes! {:?}", e);
@@ -92,12 +89,12 @@ impl ModuleToTransportGlue for PluginHandler {}
 
 /// We want to propagate over any dynamic library
 impl Propagator for PluginHandler {
-    fn propagate_transport(&self, transport: &Transport) -> Vec<Transport> {
+    fn propagate_transport(&self, transport: &Transport) -> Vec<Transport>  {
         let mut ret = Vec::new();
         let libraries = self.libraries.lock();
         for lib in libraries.iter() {
             match lib.call_ffi_propagate(transport) {
-                Ok(mut transports) => ret.append(&mut transports),
+                Ok(mut owned_transport) => ret.append(&mut owned_transport),
                 Err(e) => log::error!("Error when propagating over dynamic library! {:?}", e),
             }
         }

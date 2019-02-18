@@ -9,6 +9,8 @@ protobuf = "*"
 failure = "*"
 lazy_static = "*"
 protocols = { path = "../../../protocols/" }
+quick-protobuf = { path = "../../../quick-protobuf/quick-protobuf" }
+derive-new = "*"
 log = "*"
 
 [build-dependencies]

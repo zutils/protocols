@@ -1,5 +1,5 @@
 use crate::transportresponse::TransportResponse;
-use crate::{Transport, Destination, TransportToModuleGlue, ModuleToTransportGlue};
+use crate::{SchemaIdentifier, ModuleInfo, Transport, Destination, TransportToModuleGlue, ModuleToTransportGlue};
 use crate::common::CommonModule;
 
 use std::collections::HashMap;
@@ -15,14 +15,16 @@ pub struct TransportNode {
 
 impl TransportNode {
     pub fn add_interface<M: 'static + TransportToModuleGlue + CommonModule + Send>(&mut self, module: M) {
-        match module.get_info(&Destination::new()) {
-            Ok(ref vec_info) if vec_info.get_vec().len() > 1 => log::warn!("Module is returning too much info!"),
-            Ok(ref vec_info) if vec_info.get_vec().len() == 1 => {
+        use std::convert::TryInto;
+
+        match module.get_info(&Destination::default()) {
+            Ok(ref vec_info) if vec_info.vec.len() > 1 => log::warn!("Module is returning too much info!"),
+            Ok(ref mut vec_info) if vec_info.vec.len() == 1 => {
                 // If we have exactly one module_info, then we need to add that module's schema as a key
-                let info = &vec_info.get_vec().to_vec()[0];
-                let schema = info.get_schema();
-                self.modules.insert(schema.to_string(), Arc::new(Mutex::new(module))); },
-            Ok(ref vec_info) if vec_info.get_vec().len() == 0 => log::warn!("No Info available from module!"),
+                let info: ModuleInfo = vec_info.vec.pop().unwrap_or(ModuleInfo::default());
+                let schema = info.schema.unwrap_or(SchemaIdentifier::new(Some("".into())));
+                self.modules.insert(schema.try_into().unwrap(), Arc::new(Mutex::new(module))); },
+            Ok(ref vec_info) if vec_info.vec.len() == 0 => log::warn!("No Info available from module!"),
             Ok(_) => log::error!("Cannot add module to Transport Node!"),
             Err(e) => log::error!("Cannot add module to Transport Node! {:?}", e),
         }
@@ -32,19 +34,36 @@ impl TransportNode {
         self.nodes.push(Arc::new(RwLock::new(node)));
     }
 
+    pub fn get_appropriate_modules(&self, transport: &Transport) -> Vec<&String> {
+        // ALL modules are allowed if there is no destination
+        if let None = transport.destination {
+            log::debug!("No Destination found. Using all modules.");
+            return self.modules.iter().map(|(key, _)| key).collect();
+        }
+
+        if let Some(schema_dest) = &transport.destination {
+            if let Some(schema_dest) = &schema_dest.id {
+                return self.modules.iter()
+                    .inspect(|(schema, _)| log::trace!("Checking for appropriate schema: {:?}", schema) )
+                    .filter(move |(schema, _)| **schema == *schema_dest)
+                    .map(|(key, _)| key).collect::<Vec<_>>();
+            }
+        }
+
+        Vec::new() // None
+    }
+
+    /// Handle modules that is have the proper destination. If there is no destination, handle everywhere.
     pub fn handle_appropriate_modules(&self, transport: &Transport) -> Vec<Transport> {
         log::trace!("Attempting to handle {:?}", transport);
 
-        let appropriate_modules = self.modules.iter()
-            .inspect(|(schema, _)| log::trace!("Checking for appropriate schema: {:?}", schema) )
-            .filter(|(schema, _)| !transport.has_destination() || **schema == transport.get_destination().to_string())
-            .map(|(_, module)| module).collect::<Vec<_>>();
-
+        let appropriate_modules = self.get_appropriate_modules(transport);
         if appropriate_modules.len() > 0 {
             log::debug!("Found {} appropriate modules.", appropriate_modules.len());
         }
 
         let (transports, errors): (Vec<_>, Vec<_>) = appropriate_modules.iter()
+            .map(|&key| &self.modules[key])
             .map(|module| module.lock().unwrap().handle_transport(transport) )
             .partition(Result::is_ok);
 

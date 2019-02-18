@@ -54,7 +54,6 @@ message VecModuleInfo { repeated ModuleInfo vec = 1; }
 message VecRpcData { repeated RpcData vec = 1; }
 
 enum RequestType {
-    NONE = 0;
     GET_INFO = 1;
     RECEIVE_RPC_AS_CLIENT = 2;
     RECEIVE_RPC_AS_SERVER = 3;

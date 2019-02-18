@@ -8,13 +8,8 @@ pub struct TestInterface;
 
 impl CommonModule for TestInterface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, Error> {
-        let mut info = ModuleInfo::new();
-        info.set_name("Test".to_string());
-        info.set_schema(SCHEMA_URL);
-        
-        let mut ret = VecModuleInfo::new();
-        ret.vec = protobuf::RepeatedField::from_vec(vec![info]);
-        Ok(ret)
+        let info = ModuleInfo::new(Some(SCHEMA_URL.into()), Some("Test".into()));
+        Ok(VecModuleInfo::new(vec![info]))
     }
 
     fn receive_rpc_as_client(&self, data: &RpcData) -> Result<VecRpcData, Error> {
@@ -33,18 +28,20 @@ impl CommonModule for TestInterface {
 struct ClientRPCHandler;
 impl ClientRPCHandler {
     fn handle(data: &RpcData) -> Result<VecRpcData, Error> {
-        let additional_rpcs = match data.method_name.as_str() {
-            "ClientRPC/receive_test" => {
-                let arg = protobuf::parse_from_bytes(data.get_serialized_rpc_arg())?;
-                let _empty = ClientRPCHandler::receive_test(arg);
+        let serialized_arg = match &data.serialized_rpc_arg {
+            Some(arg) => quick_protobuf::deserialize_from_slice(&arg)?,
+            None => return Err(failure::format_err!("No Arg!")),
+        };
+
+        let additional_rpcs = match data.method_name {
+            Some(ref s) if s == "ClientRPC/receive_test" => {
+                let _empty = ClientRPCHandler::receive_test(serialized_arg);
                 Vec::new()
             },
             _ => Vec::new(),
         };
 
-        let mut ret = VecRpcData::new();
-        ret.vec = protobuf::RepeatedField::from_vec(additional_rpcs);
-        Ok(ret)
+        Ok(VecRpcData::new(additional_rpcs))
     }
 
     fn receive_test(data: test::Test) -> test::Empty {

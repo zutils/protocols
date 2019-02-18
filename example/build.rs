@@ -9,7 +9,7 @@ fn create_protobuf(proto_path: &PathBuf) -> Result<(), Error> {
 }
 
 fn main() -> Result<(), Error>  {
-    protocols::utils::initialize_standard_logging("")?;
+    protocols::logging::initialize_standard_logging("")?;
 
     let schema = include_str!("../libraries/test-protocol/schema_urls/test.txt");
     let _proto_path = buildfunctions::download_schema_from_ipfs("test", schema);

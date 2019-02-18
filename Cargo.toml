@@ -15,29 +15,28 @@ edition = "2018"
 failure = "0.1.5"
 signals = "0.0.5"
 libloading = "0.5"
-notify = "4.0.6"
+notify = "4.0.7"
 glob = "0.2"
-protobuf = "2.2.4"
-protobuf-codegen = "2.2.4"
-protobuf-codegen-pure = "2.2.4"
-protoc-rust-grpc = "0.6.1"
+pb-rs = { path = "../quick-protobuf/pb-rs" }
+quick-protobuf = { path = "../quick-protobuf/quick-protobuf" }
 ipfs-api = "0.5.0-alpha2"
-hyper = "0.12.21"
+hyper = "0.12.23"
 log = "0.4.6"
 lazy_static = "1.2.0"
-reqwest = "0.9.8"
+reqwest = "0.9.9"
 fern = { version = "0.5.7", features = ["colored"] }
+derive-new = "0.5.6"
 
 [build-dependencies]
 failure = "0.1.5"
-protoc-rust-grpc = "0.6.1"
-protobuf-codegen-pure = "2.2.4"
-protobuf = "2.2.4"
+pb-rs = { path = "../quick-protobuf/pb-rs" }
+quick-protobuf = { path = "../quick-protobuf/quick-protobuf" }
 hyper = "0.12.21"
 ipfs-api = "0.5.0-alpha2"
 log = "0.4.6"
-reqwest = "0.9.8"
+reqwest = "0.9.9"
 lazy_static = "1.2.0"
+derive-new = "0.5.6"
 fern = { version = "0.5.7", features = ["colored"] }
 
 [badges]
