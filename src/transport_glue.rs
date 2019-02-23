@@ -17,47 +17,37 @@ pub trait TransportToModuleGlue: CommonModule {
     fn handle_transport(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
         // Pass on transport to proper function
         match transport.request_type {
-            Some(RequestType::GET_INFO) => self.get_info_glue(transport),
-            Some(RequestType::RECEIVE_RPC_AS_CLIENT) => self.receive_rpc_as_client_glue(transport),
-            Some(RequestType::RECEIVE_RPC_AS_SERVER) => self.receive_rpc_as_server_glue(transport),
-            Some(RequestType::RECEIVE_PUBLIC_RPC) => self.receive_public_rpc_glue(transport),
-            None => { log::error!("No request type to handle!"); Ok(Vec::new()) },
+            RequestType::GET_INFO => self.get_info_glue(transport),
+            RequestType::RECEIVE_RPC_AS_CLIENT => self.receive_rpc_as_client_glue(transport),
+            RequestType::RECEIVE_RPC_AS_SERVER => self.receive_rpc_as_server_glue(transport),
+            RequestType::RECEIVE_PUBLIC_RPC => self.receive_public_rpc_glue(transport),
         }
     }
 
     fn get_info_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
-        if let Some(payload) = &transport.payload {
-            if let mod_DataType::OneOfresult::destination(msg) = &payload.result {
-                let module_ret = self.get_info(&msg)?;
-                let result = mod_DataType::OneOfresult::vecmoduleinfo(module_ret);
-                let ret = TransportResponse::create_Transport_result(result);
-                Ok(vec![ret])    
-            } else {
-                Err(failure::format_err!("No Destination found!"))
-            }
+        if let mod_DataType::OneOfresult::destination(msg) = &transport.payload.result {
+            let module_ret = self.get_info(&msg)?;
+            let result = mod_DataType::OneOfresult::vecmoduleinfo(module_ret);
+            let ret = TransportResponse::create_Transport_result(result);
+            Ok(vec![ret])    
         } else {
-            Err(failure::format_err!("No payload!"))
+            Err(failure::format_err!("No Destination found!"))
         }
     }
 
     fn receive_rpc_as_client_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-        if let Some(payload) = &transport.payload {
-            if let mod_DataType::OneOfresult::rpcdata(msg) = &payload.result {
-                let module_ret = self.receive_rpc_as_client(&msg)?;
-                let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
-                let ret = TransportResponse::create_Transport_result(result);
-                Ok(vec![ret])    
-            } else {
-                Err(failure::format_err!("No Destination found!"))
-            }
+        if let mod_DataType::OneOfresult::rpcdata(msg) = &transport.payload.result {
+            let module_ret = self.receive_rpc_as_client(&msg)?;
+            let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
+            let ret = TransportResponse::create_Transport_result(result);
+            Ok(vec![ret])    
         } else {
-            Err(failure::format_err!("No payload!"))
+            Err(failure::format_err!("No Destination found!"))
         }
     }
 
     fn receive_rpc_as_server_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-        if let Some(payload) = &transport.payload {
-            if let mod_DataType::OneOfresult::rpcdata(msg) = &payload.result {
+            if let mod_DataType::OneOfresult::rpcdata(msg) = &transport.payload.result {
                 let module_ret = self.receive_rpc_as_server(&msg)?;
                 let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
                 let ret = TransportResponse::create_Transport_result(result);
@@ -65,23 +55,16 @@ pub trait TransportToModuleGlue: CommonModule {
             } else {
                 Err(failure::format_err!("No Destination found!"))
             }
-        } else {
-            Err(failure::format_err!("No payload!"))
-        }
     }
 
     fn receive_public_rpc_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-        if let Some(payload) = &transport.payload {
-            if let mod_DataType::OneOfresult::rpcdata(msg) = &payload.result {
-                let module_ret = self.receive_public_rpc(&msg)?;
-                let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
-                let ret = TransportResponse::create_Transport_result(result);
-                Ok(vec![ret])    
-            } else {
-                Err(failure::format_err!("No Destination found!"))
-            }
+        if let mod_DataType::OneOfresult::rpcdata(msg) = &transport.payload.result {
+            let module_ret = self.receive_public_rpc(&msg)?;
+            let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
+            let ret = TransportResponse::create_Transport_result(result);
+            Ok(vec![ret])    
         } else {
-            Err(failure::format_err!("No payload!"))
+            Err(failure::format_err!("No Destination found!"))
         }
     }
 }
@@ -122,33 +105,33 @@ pub struct TransportRequest;
 impl TransportRequest {
     pub fn create_GET_INFO(data: Destination) -> Transport {
         Transport {
-            destination: data.schema.clone(),
-            payload: Some(DataType::new(mod_DataType::OneOfresult::destination(data))),
-            request_type: Some(RequestType::GET_INFO),
+            destination: Some(data.schema.clone()),
+            payload: DataType::new(mod_DataType::OneOfresult::destination(data)),
+            request_type: RequestType::GET_INFO,
         }
     }
 
     pub fn create_RECEIVE_RPC_AS_CLIENT(data: RpcData) -> Transport {
         Transport {
-            destination: data.schema.clone(),
-            payload: Some(DataType::new(mod_DataType::OneOfresult::rpcdata(data))),
-            request_type: Some(RequestType::RECEIVE_RPC_AS_CLIENT),
+            destination: Some(data.schema.clone()),
+            payload: DataType::new(mod_DataType::OneOfresult::rpcdata(data)),
+            request_type: RequestType::RECEIVE_RPC_AS_CLIENT,
         }
     }
 
     pub fn create_RECEIVE_RPC_AS_SERVER(data: RpcData) -> Transport {
         Transport {
-            destination: data.schema.clone(),
-            payload: Some(DataType::new(mod_DataType::OneOfresult::rpcdata(data))),
-            request_type: Some(RequestType::RECEIVE_RPC_AS_SERVER),
+            destination: Some(data.schema.clone()),
+            payload: DataType::new(mod_DataType::OneOfresult::rpcdata(data)),
+            request_type: RequestType::RECEIVE_RPC_AS_SERVER,
         }
     }
 
     pub fn create_RECEIVE_PUBLIC_RPC(data: RpcData) -> Transport {
         Transport {
-            destination: data.schema.clone(),
-            payload: Some(DataType::new(mod_DataType::OneOfresult::rpcdata(data))),
-            request_type: Some(RequestType::RECEIVE_PUBLIC_RPC),
+            destination: Some(data.schema.clone()),
+            payload: DataType::new(mod_DataType::OneOfresult::rpcdata(data)),
+            request_type: RequestType::RECEIVE_PUBLIC_RPC,
         }
     }
 }

@@ -11,13 +11,13 @@ pub struct TransportResponse;
 impl TransportResponse {
     pub fn create_Transport_result(data: mod_DataType::OneOfresult) -> Transport {       
         Transport {
-            payload: Some(DataType::new(data)),
+            payload: DataType::new(data),
             ..Default::default()
         }
     }
 
     pub fn create_Error(e: &str) -> Transport {
-        let err = TError::new(Some(e.into())); 
+        let err = TError::new(e.to_string()); 
         TransportResponse::create_Transport_result(mod_DataType::OneOfresult::error(err))
     }
 }
@@ -27,10 +27,9 @@ pub struct TransportCombiner;
 impl TransportCombiner {
     fn filter_some_and_print_errors<'a>(results: Vec<Transport>) -> Vec<mod_DataType::OneOfresult> {
         results.into_iter()
-            .filter_map(|transport| transport.payload)
-            .filter_map(|payload| match payload.result {
-                mod_DataType::OneOfresult::error(e) => { log::debug!("{:?}", e.error); None },
-                e => Some(e),
+            .filter_map(|transport| match transport.payload.result {
+                mod_DataType::OneOfresult::error(e) => { log::debug!("{:?}", e.val); None },
+                res => Some(res),
             }).collect()       
     }
 

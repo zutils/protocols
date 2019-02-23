@@ -1,24 +1,24 @@
 #![allow(non_snake_case)]
 
-use crate::transport_autogen::transport::{ SchemaIdentifier, Data, RpcData};
+use crate::transport_autogen::transport::{ SchemaIdentifier, RpcData};
 
-use std::convert::TryFrom;
+//use std::convert::TryFrom;
 
-impl<'a> TryFrom<SchemaIdentifier> for String {
+/*impl<'a> TryFrom<SchemaIdentifier> for String {
     type Error = failure::Error;
     fn try_from(f: SchemaIdentifier) -> Result<String, Self::Error> {
         let err = failure::format_err!("Failure converting {:?} to string.", f);
-        Ok(f.id.ok_or(err)?.to_string())
+        Ok(f.val.ok_or(err)?.to_string())
     }
-}
+}*/
 
 impl<'a> From<&str> for SchemaIdentifier {
     fn from(f: &str) -> SchemaIdentifier {
-        SchemaIdentifier::new(Some(f.into()))
+        SchemaIdentifier::new(f.to_string())
     }
 }
 
-impl<'a, T> TryFrom<(Box<T>, SchemaIdentifier)> for Data where T: quick_protobuf::MessageWrite {
+/*impl<'a, T> TryFrom<(Box<T>, SchemaIdentifier)> for Data where T: quick_protobuf::MessageWrite {
     type Error = failure::Error;
 
     fn try_from(from: (Box<T>, SchemaIdentifier)) -> Result<Data, Self::Error> {
@@ -28,7 +28,7 @@ impl<'a, T> TryFrom<(Box<T>, SchemaIdentifier)> for Data where T: quick_protobuf
             sender: None,
         })
     }
-}
+}*/
 
 /*pub trait FromDataConverter {
     fn unwrap<'a, T: quick_protobuf::MessageRead<'a> >(self) -> Result<(SchemaIdentifier, T), Error>;
@@ -49,11 +49,11 @@ impl FromDataConverter for Data {
 
 /// Helper function for creation of RpcData
 /// Yes - I know that we are taking a Vec instead of a [u8]. This is so that the function doesn't call to_vec().
-pub fn generate_rpc<'a>(schema: SchemaIdentifier, method_name: &str, serialized_data: Vec<u8>) -> RpcData {
+pub fn generate_rpc(schema: SchemaIdentifier, method_name: &str, serialized_data: Vec<u8>) -> RpcData {
     RpcData {
-        method_name: Some(method_name.into()),
-        schema: Some(schema),
-        serialized_rpc_arg: Some(serialized_data.into()),
+        method_name: method_name.to_string(),
+        schema: schema,
+        serialized_rpc_arg: serialized_data,
         ..Default::default()
     }
 }

@@ -1,5 +1,5 @@
 use crate::transportresponse::TransportResponse;
-use crate::{SchemaIdentifier, ModuleInfo, Transport, Destination, TransportToModuleGlue, ModuleToTransportGlue};
+use crate::{ModuleInfo, Transport, Destination, TransportToModuleGlue, ModuleToTransportGlue};
 use crate::common::CommonModule;
 
 use std::collections::HashMap;
@@ -15,15 +15,12 @@ pub struct TransportNode {
 
 impl TransportNode {
     pub fn add_interface<M: 'static + TransportToModuleGlue + CommonModule + Send>(&mut self, module: M) {
-        use std::convert::TryInto;
-
         match module.get_info(&Destination::default()) {
             Ok(ref vec_info) if vec_info.vec.len() > 1 => log::warn!("Module is returning too much info!"),
             Ok(ref mut vec_info) if vec_info.vec.len() == 1 => {
                 // If we have exactly one module_info, then we need to add that module's schema as a key
                 let info: ModuleInfo = vec_info.vec.pop().unwrap_or(ModuleInfo::default());
-                let schema = info.schema.unwrap_or(SchemaIdentifier::new(Some("".into())));
-                self.modules.insert(schema.try_into().unwrap(), Arc::new(Mutex::new(module))); },
+                self.modules.insert(info.schema.val, Arc::new(Mutex::new(module))); },
             Ok(ref vec_info) if vec_info.vec.len() == 0 => log::warn!("No Info available from module!"),
             Ok(_) => log::error!("Cannot add module to Transport Node!"),
             Err(e) => log::error!("Cannot add module to Transport Node! {:?}", e),
@@ -42,12 +39,11 @@ impl TransportNode {
         }
 
         if let Some(schema_dest) = &transport.destination {
-            if let Some(schema_dest) = &schema_dest.id {
-                return self.modules.iter()
-                    .inspect(|(schema, _)| log::trace!("Checking for appropriate schema: {:?}", schema) )
-                    .filter(move |(schema, _)| **schema == *schema_dest)
-                    .map(|(key, _)| key).collect::<Vec<_>>();
-            }
+            let schema_dest = &schema_dest.val;
+            return self.modules.iter()
+                .inspect(|(schema, _)| log::trace!("Checking for appropriate schema: {:?}", schema) )
+                .filter(move |(schema, _)| **schema == *schema_dest)
+                .map(|(key, _)| key).collect::<Vec<_>>();
         }
 
         Vec::new() // None

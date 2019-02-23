@@ -8,7 +8,7 @@ pub struct TestInterface;
 
 impl CommonModule for TestInterface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, Error> {
-        let info = ModuleInfo::new(Some(SCHEMA_URL.into()), Some("Test".into()));
+        let info = ModuleInfo::new(SCHEMA_URL.into(), "Test".to_string());
         Ok(VecModuleInfo::new(vec![info]))
     }
 
@@ -28,13 +28,9 @@ impl CommonModule for TestInterface {
 struct ClientRPCHandler;
 impl ClientRPCHandler {
     fn handle(data: &RpcData) -> Result<VecRpcData, Error> {
-        let serialized_arg = match &data.serialized_rpc_arg {
-            Some(arg) => quick_protobuf::deserialize_from_slice(&arg)?,
-            None => return Err(failure::format_err!("No Arg!")),
-        };
-
-        let additional_rpcs = match data.method_name {
-            Some(ref s) if s == "ClientRPC/receive_test" => {
+        let serialized_arg = quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?;
+        let additional_rpcs = match data.method_name.as_ref() {
+            "ClientRPC/receive_test" => {
                 let _empty = ClientRPCHandler::receive_test(serialized_arg);
                 Vec::new()
             },
