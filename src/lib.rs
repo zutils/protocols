@@ -40,8 +40,6 @@
 //! plugins = "*"
 //! ```
 
-#![feature(try_from)]
-
 pub mod pluginhandler;
 pub mod buildfunctions;
 pub mod propagator;
@@ -51,6 +49,7 @@ pub mod common;
 pub mod utils;
 pub mod logging;
 pub mod transport_glue;
+pub mod rpcmacro;
 
 pub use crate::transportresponse::TransportResponse;
 pub use crate::transport_glue::{TransportToModuleGlue, ModuleToTransportGlue};

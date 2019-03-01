@@ -4,31 +4,63 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::io::Write;
 
-fn generate_rpc<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
+pub fn generate_rpc_traits_and_handler<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
+	// Box::new(|rpc, writer| generate_rpc_traits_and_handler(rpc, writer))
     /* Example:
         trait <service> {
             fn <func>(&self, arg: &<arg>) -> Result<<ret>, failure::Error>;
         }
+
+		fn handle_PublicRPC(data: &RpcData) -> Result<VecRpcData, Error> {
+			let serialized_arg = quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?;
+			match data.method_name.as_ref() {
+				"PublicRPC/publish_data" => PublicRPC::publish_data(serialized_arg),
+				_ => Vec::new(),
+			}
+		}
     */
 
     writeln!(w, "\npub trait {SERVICE} {{", SERVICE = rpc.service_name)?;
+	let ret = "Vec<RpcData>"; // Formerly func.ret for ACTUAL ret... it won't work with code though.
     for func in rpc.functions.iter() {
-        writeln!(w, "   fn {FUNC}(&self, arg: &{ARG}) -> std::result::Result<{RET}, failure::Error>;", 
-            FUNC = func.name, ARG = func.arg, RET = func.ret)?;
+        writeln!(w, "   fn {FUNC}(&self, _arg: {ARG}) -> std::result::Result<{RET}, failure::Error> {{", 
+            FUNC = func.name, ARG = func.arg, RET = ret)?; 
+		writeln!(w, r#"		Err(failure::format_err!("No Rpc for {FUNC}!"))"#, FUNC = func.name)?;
+		writeln!(w, "	}}")?;	
     }
-    writeln!(w, "}}\n")?;
+    writeln!(w, "}}")?;
+
+	let service_name = rpc.service_name.clone();
+	writeln!(w, "pub fn handle_{SERVICE}<H: {SERVICE}>(data: &protocols::RpcData, {UNDERSCORE}handler: H) -> std::result::Result<protocols::VecRpcData, failure::Error> {{", 
+		SERVICE = service_name, UNDERSCORE = if rpc.functions.is_empty() { "_" } else { "" } )?;
+	if !rpc.functions.is_empty() {
+		writeln!(w, "	match data.method_name.as_ref() {{")?;
+		for func in rpc.functions.iter() {
+			writeln!(w, r#"			"{SERVICE}/{FUNC}" => Ok(handler.{FUNC}(quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?)?.into()),"#, 
+				SERVICE = service_name, FUNC = func.name)?;
+		}
+		writeln!(w, r#"		_ => Err(failure::format_err!("Cannot find rpc function {{}}", data.method_name)),"#)?;
+		writeln!(w, "	}}\n")?;
+	} else {
+		writeln!(w, r#"		Err(failure::format_err!("Rpc is unsupported for {{:?}}. Cannot execute {{}}", data.schema, data.method_name))"#)?;
+	}
+	writeln!(w, "}}\n")?;
 
     Ok(())
 }
 
-/// Call protoc on protobuffer and create non-rpc code
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
+	build_rust_code_from_protobuffer_with_options(proto_filename, vec!["use protocols::{Data, RpcData};".to_string()],
+		Box::new(|rpc, writer| generate_rpc_traits_and_handler(rpc, writer)))
+}
+
+/// Call protoc on protobuffer and create non-rpc code
+pub fn build_rust_code_from_protobuffer_with_options(proto_filename: &PathBuf, includes: Vec<String>, rpc_generator: pb_rs::types::RpcGeneratorFunction) -> Result<PathBuf, Error> {
 	use pb_rs::types::Config;
 	log::info!("Building protobuf for {:?}", &proto_filename);
 
 	let out_dir = out_dir(&proto_filename);
 	std::fs::create_dir_all(&out_dir)?;
-
 	let out_file = get_protobuf_generated_file(proto_filename);
 
     let config = Config {
@@ -41,7 +73,8 @@ pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<Path
         headers: true,
 		dont_use_cow: true,
         custom_struct_derive: vec!["derive_new::new".into()],
-        custom_rpc_generator: Box::new(|rpc, writer| generate_rpc(rpc, writer))
+        custom_rpc_generator: rpc_generator,
+		custom_includes: includes,
     };
 
     pb_rs::types::FileDescriptor::write_proto(&config).unwrap();

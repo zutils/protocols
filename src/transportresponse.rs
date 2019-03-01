@@ -89,3 +89,9 @@ impl TransportCombiner {
         Ok(VecRpcData::new(infos))
     }
 }
+
+impl From<Vec<RpcData>> for VecRpcData {
+    fn from(f: Vec<RpcData>) -> Self {
+        VecRpcData::new(f)
+    }
+}
