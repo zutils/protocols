@@ -40,6 +40,8 @@
 //! plugins = "*"
 //! ```
 
+#![feature(try_from)]
+
 pub mod pluginhandler;
 pub mod buildfunctions;
 pub mod propagator;

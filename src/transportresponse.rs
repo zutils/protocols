@@ -6,6 +6,7 @@ use crate::{Transport, Data, RpcData, ModuleInfo, VecModuleInfo, VecData, VecRpc
 use crate::transport_autogen::transport::{mod_DataType, DataType};
 
 use failure::Error;
+use core::convert::TryInto;
 
 pub struct TransportResponse;
 impl TransportResponse {
@@ -23,18 +24,18 @@ impl TransportResponse {
 }
 
 /// Returning transports can be poisoned via webasm unsafe code and can be a security risk if not handled properly!!!
-pub struct TransportCombiner;
-impl TransportCombiner {
-    fn filter_some_and_print_errors<'a>(results: Vec<Transport>) -> Vec<mod_DataType::OneOfresult> {
-        results.into_iter()
-            .filter_map(|transport| match transport.payload.result {
-                mod_DataType::OneOfresult::error(e) => { log::debug!("{:?}", e.val); None },
-                res => Some(res),
-            }).collect()       
-    }
+fn filter_some_and_print_errors(results: Vec<Transport>) -> Vec<mod_DataType::OneOfresult> {
+    results.into_iter()
+        .filter_map(|transport| match transport.payload.result {
+            mod_DataType::OneOfresult::error(e) => { log::debug!("{:?}", e.val); None },
+            res => Some(res),
+        }).collect()       
+}
 
-    pub fn combine_to_VecModuleInfo(results: Vec<Transport>) -> Result<VecModuleInfo, Error> {
-        let results = TransportCombiner::filter_some_and_print_errors(results);
+impl TryInto<VecModuleInfo> for Vec<Transport> {
+    type Error = Error;
+    fn try_into(self) -> Result<VecModuleInfo, Self::Error> {
+        let results = filter_some_and_print_errors(self);
 
         let infos: Vec<ModuleInfo> = results.into_iter()
             .filter_map(|result| match result { 
@@ -45,9 +46,12 @@ impl TransportCombiner {
         
         Ok(VecModuleInfo::new(infos))
     }
+}
 
-    pub fn combine_to_Data(results: Vec<Transport>) -> Result<Data, Error> {
-        let results = TransportCombiner::filter_some_and_print_errors(results);
+impl TryInto<Data> for Vec<Transport> {
+    type Error = Error;
+    fn try_into(self) -> Result<Data, Self::Error> {
+        let results = filter_some_and_print_errors(self);
 
         let mut infos: Vec<Data> = results.into_iter()
             .filter_map(|result| match result { 
@@ -62,9 +66,12 @@ impl TransportCombiner {
 
         Ok(infos.pop().ok_or(failure::format_err!("No response for data request!"))?)
     }
+}
 
-    pub fn combine_to_VecData(results: Vec<Transport>) -> Result<VecData, Error> {
-        let results = TransportCombiner::filter_some_and_print_errors(results);
+impl TryInto<VecData> for Vec<Transport> {
+    type Error = Error;
+    fn try_into(self) -> Result<VecData, Self::Error> {
+        let results = filter_some_and_print_errors(self);
 
         let infos: Vec<Data> = results.into_iter()
             .filter_map(|result| match result { 
@@ -75,9 +82,12 @@ impl TransportCombiner {
         
         Ok(VecData::new(infos))
     }
+}
 
-    pub fn combine_to_VecRpcData(results: Vec<Transport>) -> Result<VecRpcData, Error> {
-        let results = TransportCombiner::filter_some_and_print_errors(results);
+impl TryInto<VecRpcData> for Vec<Transport> {
+    type Error = Error;
+    fn try_into(self) -> Result<VecRpcData, Self::Error> {
+        let results = filter_some_and_print_errors(self);
 
         let infos: Vec<RpcData> = results.into_iter()
             .filter_map(|result| match result { 

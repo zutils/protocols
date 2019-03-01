@@ -3,10 +3,10 @@
 use crate::{Destination, RpcData, Transport, VecModuleInfo, VecRpcData};
 use crate::propagator::Propagator;
 use crate::common::CommonModule;
-use crate::transportresponse::{TransportResponse, TransportCombiner};
-
+use crate::transportresponse::TransportResponse;
 use crate::transport_autogen::transport::{DataType, RequestType, mod_DataType};
 
+use std::convert::TryInto;
 use failure::Error;
 
 // Anywhere there is a common module, we want transports working with them.
@@ -74,29 +74,25 @@ pub trait ModuleToTransportGlue: Propagator {
     fn get_info(&self, data: Destination) -> Result<VecModuleInfo, Error> {
         log::debug!("Propagating get_info({:?})", data);
         let transport = TransportRequest::create_GET_INFO(data);
-        let transport_results = self.propagate_transport(&transport);
-        TransportCombiner::combine_to_VecModuleInfo(transport_results)
+        self.propagate_transport(&transport).try_into()
     }
 
     fn receive_rpc_as_client(&self, data: RpcData) -> Result<VecRpcData, Error> {
         log::debug!("Propagating receive_rpc_as_client({:?})", data);
         let transport = TransportRequest::create_RECEIVE_RPC_AS_CLIENT(data);
-        let transport_results = self.propagate_transport(&transport);
-        TransportCombiner::combine_to_VecRpcData(transport_results)
+        self.propagate_transport(&transport).try_into()
     }
 
     fn receive_rpc_as_server(&self, data: RpcData) -> Result<VecRpcData, Error> {
         log::debug!("Propagating receive_rpc_as_server({:?})", data);
         let transport = TransportRequest::create_RECEIVE_RPC_AS_SERVER(data);
-        let transport_results = self.propagate_transport(&transport);
-        TransportCombiner::combine_to_VecRpcData(transport_results)
+        self.propagate_transport(&transport).try_into()
     }
 
     fn receive_public_rpc(&self, data: RpcData) -> Result<VecRpcData, Error> {
         log::debug!("Propagating receive_public_rpc({:?})", data);
         let transport = TransportRequest::create_RECEIVE_PUBLIC_RPC(data);
-        let transport_results = self.propagate_transport(&transport);
-        TransportCombiner::combine_to_VecRpcData(transport_results)
+        self.propagate_transport(&transport).try_into()
     }
 }
 
