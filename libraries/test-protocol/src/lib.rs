@@ -8,7 +8,7 @@ pub mod test_autogen;
 lazy_static! {
     static ref NODE: TransportNode = {
         let mut m = TransportNode::default();
-        m.add_interface(test_interface::TestInterface{});
+        m.add_interface(test_interface::Interface{});
         // __REGISTERINTERFACES__ Do not remove this line. This line is used to add new protocols.
         m
     };

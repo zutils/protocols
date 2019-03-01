@@ -10,3 +10,6 @@ message Empty {}
 service ClientRPC {
     rpc receive_test(Test) returns (Empty);
 }
+
+service PublicRPC{}
+service ServerRPC{}
