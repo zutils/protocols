@@ -59,7 +59,7 @@ pub fn build_rust_code_from_protobuffer_with_options(proto_filename: &PathBuf, i
 	use pb_rs::types::Config;
 	log::info!("Building protobuf for {:?}", &proto_filename);
 
-	let out_dir = out_dir(&proto_filename);
+	let out_dir = autogen_dir();
 	std::fs::create_dir_all(&out_dir)?;
 	let out_file = get_protobuf_generated_file(proto_filename);
 
@@ -142,11 +142,36 @@ fn resolve_ipfs(ipfs: &str) -> Result<Vec<u8>, Error> {
 	Ok(bytes)
 }
 
-pub fn write_schema_url(schema_path: &PathBuf, schema_url: &str) -> Result<PathBuf, Error> {
-	let schema_link_path = format!("./schema_urls/{}.txt", base_name(schema_path));
-	let schema_link_path = PathBuf::from(schema_link_path);
-	write_to_file(&schema_link_path, schema_url.to_string())?;
-	Ok(schema_link_path)
+pub fn remove_schema_map_rs() {
+	let schema_map_rs = get_schema_map_rs_path();
+	if let Err(e) = std::fs::remove_file(&schema_map_rs) {
+		println!("Cannot remove {:?}. {:?}", schema_map_rs, e);
+	}
+}
+
+pub fn add_to_schema_map_rs(proto_path: &PathBuf, schema: &str) -> Result<(), Error> {
+	let schema_map_rs = get_schema_map_rs_path();
+	let base_name = base_name(proto_path);
+	let line = format!("pub static SCHEMA_URL_{}: &str = \"{}\";\n", base_name.to_uppercase(), schema);
+	
+	let mut file_content;
+	if schema_map_rs.exists() {
+		file_content = ::std::fs::read_to_string(schema_map_rs.clone())?;
+		if !file_content.contains(&line) {
+			file_content += &line;
+		}
+	} else {
+		file_content = line;
+	}
+
+	write_to_file(&schema_map_rs, file_content)?;
+	Ok(())
+}
+
+fn get_schema_map_rs_path() -> PathBuf {
+	let mut schema_map_rs = autogen_dir();
+	schema_map_rs.push("schema_map.rs");
+	schema_map_rs
 }
 
 pub fn file_missing_text(path: &PathBuf, text: &str) -> Result<bool, Error> {
@@ -203,7 +228,7 @@ fn create_necessary_path_from_file_name(file_path: &PathBuf) -> Result<(), Error
 fn get_protobuf_generated_file(proto_filename: &PathBuf) -> PathBuf {
 	// Figure out the file that was generated.
 	let base_name = base_name(proto_filename);
-	let mut out_file = out_dir(&proto_filename);
+	let mut out_file = autogen_dir();
 	out_file.push(format!("{}.rs", base_name));
 	out_file
 }
@@ -213,10 +238,9 @@ fn base_name(protobuf_path: &PathBuf) -> String {
 	base_name
 }
 
-fn out_dir(protobuf_path: &PathBuf) -> PathBuf {
+fn autogen_dir() -> PathBuf {
 	let mut dir = PathBuf::from(std::env::current_dir().unwrap());
 	dir.push("src");
-	let base_name = base_name(protobuf_path);
-	dir.push(format!("{}_autogen", base_name));
+	dir.push("autogen");
 	dir
 }
