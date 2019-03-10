@@ -1,8 +1,8 @@
 use lazy_static::lazy_static;
 use protocols::propagator::TransportNode;
 
+pub mod autogen;
 pub mod test_interface;
-pub mod test_autogen;
 // __PUBMODPROTOCOLS__ Do not remove this line. This line is used to add new protocols.
 
 lazy_static! {

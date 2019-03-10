@@ -1,9 +1,9 @@
 //! Payload functions offer serializers and deserializers for common Transport payloads
 #![allow(non_snake_case)]
 
-use crate::transport_autogen::transport::Error as TError;
+use crate::autogen::transport::Error as TError;
 use crate::{Transport, Data, RpcData, ModuleInfo, VecModuleInfo, VecData, VecRpcData};
-use crate::transport_autogen::transport::{mod_DataType, DataType};
+use crate::autogen::transport::{mod_DataType, DataType};
 
 use failure::Error;
 use core::convert::TryInto;

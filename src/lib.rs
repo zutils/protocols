@@ -45,7 +45,7 @@
 pub mod pluginhandler;
 pub mod buildfunctions;
 pub mod propagator;
-pub mod transport_autogen;
+pub mod autogen;
 pub mod transportresponse;
 pub mod common;
 pub mod utils;
@@ -53,9 +53,10 @@ pub mod logging;
 pub mod transport_glue;
 pub mod rpcmacro;
 
+pub use crate::pluginhandler::{PluginHandler, DynamicLibraryLoader};
 pub use crate::transportresponse::TransportResponse;
 pub use crate::transport_glue::{TransportToModuleGlue, ModuleToTransportGlue};
 pub use crate::common::CommonModule;
-pub use crate::transport_autogen::transport::{Transport, Sender, VecTransport, SchemaIdentifier, ModuleInfo, 
+pub use crate::autogen::transport::{Transport, Sender, VecTransport, SchemaIdentifier, ModuleInfo, 
                 Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData, PeerIdentifier};
 
