@@ -39,5 +39,8 @@ lazy_static = "1.2.0"
 derive-new = "0.5.6"
 fern = { version = "0.5.7", features = ["colored"] }
 
+[dev-dependencies]
+test-protocol = { path = "./libraries/test-protocol" } # This is so that the dll gets created.
+
 [badges]
 travis-ci = { repository = "zutils/protocols" }
