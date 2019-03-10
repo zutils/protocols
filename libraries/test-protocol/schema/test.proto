@@ -1,8 +1,8 @@
-syntax = "proto3";
+syntax = "proto2";
 
 message Test {
-  string name = 1;
-  string data = 2;
+  required string name = 1;
+  required string data = 2;
 }
 
 message Empty {}
