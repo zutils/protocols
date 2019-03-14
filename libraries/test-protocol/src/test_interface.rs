@@ -1,5 +1,5 @@
 use crate::autogen::test;
-use crate::autogen::schema_map;
+use crate::autogen::schema_urls;
 
 use protocols::{CommonModule, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
 
@@ -13,7 +13,7 @@ impl test::PublicRPC for PublicRPCHandler {}
 pub struct Interface;
 impl CommonModule for Interface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, failure::Error> {
-        let info = ModuleInfo::new(schema_map::SCHEMA_URL_TEST.into(), "test".to_string());
+        let info = ModuleInfo::new(schema_urls::SCHEMA_URL_TEST.into(), "test".to_string());
         Ok(VecModuleInfo::new(vec![info]))
     }
 
@@ -66,7 +66,7 @@ mod tests {
         
         let rpc = protocols::RpcData {
             method_name: "ClientRPC/receive_test".to_string(),
-            schema: schema_map::SCHEMA_URL_TEST.into(),
+            schema: schema_urls::SCHEMA_URL_TEST.into(),
             serialized_rpc_arg: quick_protobuf::serialize_into_vec(&test_data)?,
             ..Default::default()
         };
