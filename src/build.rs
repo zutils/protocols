@@ -9,7 +9,8 @@ fn create_protobuf(proto_path: &PathBuf) -> Result<(), Error> {
 		Box::new(|_, _| Ok(()) ))?;
 
 	let hash = buildfunctions::add_file_to_ipfs(proto_path)?;
-	buildfunctions::add_to_schema_urls_rs(&proto_path, &hash)?;
+	let base_name = buildfunctions::base_name(proto_path);
+	buildfunctions::add_to_schema_urls_rs(&base_name, &hash)?;
 	Ok(())
 }
 
