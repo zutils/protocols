@@ -149,22 +149,40 @@ pub fn remove_schema_urls_rs() {
 	}
 }
 
-pub fn add_to_schema_urls_rs(proto_path: &PathBuf, schema: &str) -> Result<(), Error> {
+pub fn create_schema_urls_rs() -> Result<(), Error> {
 	let schema_urls_rs = get_schema_urls_rs_path();
-	let base_name = base_name(proto_path);
-	let line = format!("pub static SCHEMA_URL_{}: &str = \"{}\";\n", base_name.to_uppercase(), schema);
-	
-	let mut file_content;
-	if schema_urls_rs.exists() {
-		file_content = ::std::fs::read_to_string(schema_urls_rs.clone())?;
-		if !file_content.contains(&line) {
-			file_content += &line;
-		}
-	} else {
-		file_content = line;
+
+	let mut file_data = String::new();
+	file_data += "// __SCHEMA_URLS__ Do not remove this line. This line is used to add new protocols.\n\n";
+
+	file_data += "pub fn get_all_aliases() -> ::std::collections::HashMap<String, &'static str> {\n";
+	file_data += "\tlet mut ret = ::std::collections::HashMap::new();\n";
+	file_data += "\t// __SCHEMA_MAP_INSERT__ Do not remove this line. This line is used to add new protocols.\n";
+	file_data += "\tret\n";
+	file_data += "}\n";
+
+	write_to_file(&schema_urls_rs, file_data)?;
+
+	Ok(())
+}
+
+pub fn add_to_schema_urls_rs(base_name: &str, schema: &str) -> Result<(), Error> {
+	let schema_urls_rs = get_schema_urls_rs_path();
+
+	if !schema_urls_rs.exists() {
+		create_schema_urls_rs()?;
 	}
 
-	write_to_file(&schema_urls_rs, file_content)?;
+	// Add a line for direct lookup
+	let line = format!("pub static SCHEMA_URL_{}: &str = \"{}\";\n", base_name.to_uppercase(), schema);
+	let replace_line = "// __SCHEMA_URLS__";
+	modify_file(&schema_urls_rs, replace_line, &(line + "\t" + replace_line))?;
+	
+	// Add a line for get_all_aliases
+	let line = format!("ret.insert(\"{}\".to_string(), SCHEMA_URL_{});\n", base_name, base_name.to_uppercase());
+	let replace_line = "// __SCHEMA_MAP_INSERT__";
+	modify_file(&schema_urls_rs, replace_line, &(line + "\t" + replace_line))?;
+
 	Ok(())
 }
 
@@ -233,7 +251,7 @@ fn get_protobuf_generated_file(proto_filename: &PathBuf) -> PathBuf {
 	out_file
 }
 
-fn base_name(protobuf_path: &PathBuf) -> String {
+pub fn base_name(protobuf_path: &PathBuf) -> String {
 	let base_name: String = protobuf_path.file_stem().unwrap().to_str().unwrap().to_string();
 	base_name
 }
