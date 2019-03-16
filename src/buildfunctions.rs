@@ -50,7 +50,12 @@ pub fn generate_rpc_traits_and_handler<W: Write + ?Sized>(rpc: &pb_rs::types::Rp
 }
 
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
-	build_rust_code_from_protobuffer_with_options(proto_filename, vec!["use protocols::{Data, RpcData};".to_string()],
+	let includes = vec![
+		"use protocols::{Data, RpcData};".to_string(),
+		"//__SCHEMA_URL__".to_string()
+	];
+
+	build_rust_code_from_protobuffer_with_options(proto_filename, includes,
 		Box::new(|rpc, writer| generate_rpc_traits_and_handler(rpc, writer)))
 }
 
@@ -121,12 +126,20 @@ pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
     Ok(hash)
 }
 
+pub fn hash_protobuf_and_generate_code(proto_path: &PathBuf) -> Result<(), Error> {
+	let generated_rs_file = build_rust_code_from_protobuffer(proto_path)?;
+	let hash = add_file_to_ipfs(proto_path)?;
+	replace_schema_url_comment_with_hash_constant(&generated_rs_file, &hash)?;
+	add_to_schema_urls_rs(&base_name(proto_path), &hash)?;
+	Ok(())
+}
+
 pub fn download_schema_from_ipfs(schema_name: &str, schema_ipfs_hash: &str) -> Result<PathBuf, Error> {
 	log::debug!("Downloading schema {:?}...", schema_ipfs_hash);
 	let schema_data = resolve_ipfs(schema_ipfs_hash)?;
 
 	// TODO: Handle files of other protocols
-	let schema_path = format!("./schema/{}.proto", schema_name);
+	let schema_path = format!("./downloaded_schema/{}.proto", schema_name);
 	let schema_path = PathBuf::from(schema_path);
 	log::debug!("Writing schema to {:?}", schema_path);
 	write_to_file(&schema_path, std::str::from_utf8(&schema_data)?.to_string())?;
@@ -153,8 +166,6 @@ pub fn create_schema_urls_rs() -> Result<(), Error> {
 	let schema_urls_rs = get_schema_urls_rs_path();
 
 	let mut file_data = String::new();
-	file_data += "// __SCHEMA_URLS__ Do not remove this line. This line is used to add new protocols.\n\n";
-
 	file_data += "pub fn get_all_aliases() -> ::std::collections::HashMap<String, &'static str> {\n";
 	file_data += "\tlet mut ret = ::std::collections::HashMap::new();\n";
 	file_data += "\t// __SCHEMA_MAP_INSERT__ Do not remove this line. This line is used to add new protocols.\n";
@@ -166,6 +177,11 @@ pub fn create_schema_urls_rs() -> Result<(), Error> {
 	Ok(())
 }
 
+pub fn replace_schema_url_comment_with_hash_constant(path: &PathBuf, hash: &str) -> Result<(), Error> {
+	let static_schema_url_text = format!("pub static SCHEMA_URL: &str = \"{}\";", hash);
+	replace_in_file(path, "//__SCHEMA_URL__", &static_schema_url_text)
+}
+
 pub fn add_to_schema_urls_rs(base_name: &str, schema: &str) -> Result<(), Error> {
 	let schema_urls_rs = get_schema_urls_rs_path();
 
@@ -173,15 +189,10 @@ pub fn add_to_schema_urls_rs(base_name: &str, schema: &str) -> Result<(), Error>
 		create_schema_urls_rs()?;
 	}
 
-	// Add a line for direct lookup
-	let line = format!("pub static SCHEMA_URL_{}: &str = \"{}\";\n", base_name.to_uppercase(), schema);
-	let replace_line = "// __SCHEMA_URLS__";
-	modify_file(&schema_urls_rs, replace_line, &(line + "\t" + replace_line))?;
-	
 	// Add a line for get_all_aliases
-	let line = format!("ret.insert(\"{}\".to_string(), SCHEMA_URL_{});\n", base_name, base_name.to_uppercase());
+	let line = format!("ret.insert(\"{}\".to_string(), \"{}\");\n", base_name, schema);
 	let replace_line = "// __SCHEMA_MAP_INSERT__";
-	modify_file(&schema_urls_rs, replace_line, &(line + "\t" + replace_line))?;
+	replace_in_file(&schema_urls_rs, replace_line, &(line + "\t" + replace_line))?;
 
 	Ok(())
 }
@@ -206,7 +217,7 @@ pub fn append_to_file(path: &PathBuf, text: String) -> Result<(), Error> {
 	Ok(())
 }
 
-pub fn modify_file(path: &PathBuf, pretext: &str, posttext: &str) -> Result<(), Error> {
+pub fn replace_in_file(path: &PathBuf, pretext: &str, posttext: &str) -> Result<(), Error> {
 	let file_data = ::std::fs::read_to_string(path)?;
 	let modified_file = file_data.replace(pretext, posttext);
 	write_to_file(path, modified_file)?;
