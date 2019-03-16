@@ -157,8 +157,13 @@ fn resolve_ipfs(ipfs: &str) -> Result<Vec<u8>, Error> {
 
 pub fn remove_schema_urls_rs() {
 	let schema_urls_rs = get_schema_urls_rs_path();
+	if !schema_urls_rs.exists() {
+		log::trace!("schema_urls.rs doesn't exist anyway!");
+		return;
+	}
+
 	if let Err(e) = std::fs::remove_file(&schema_urls_rs) {
-		println!("Cannot remove {:?}. {:?}", schema_urls_rs, e);
+		log::trace!("Cannot remove {:?}. {:?}", schema_urls_rs, e);
 	}
 }
 
@@ -226,14 +231,14 @@ pub fn replace_in_file(path: &PathBuf, pretext: &str, posttext: &str) -> Result<
 
 pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(), Error>) {
 	use std::fs;
-    let paths = fs::read_dir(path_str).unwrap();
-
-    for path in paths {
-		let path = path.unwrap().path();
-		if let Err(e) = func(&path) {
-			log::error!("{:?}", e);
+    if let Ok(paths) = fs::read_dir(path_str) {
+		for path in paths {
+			let path = path.unwrap().path();
+			if let Err(e) = func(&path) {
+				log::error!("{:?}", e);
+			}
 		}
-    }
+	}
 }
 
 pub fn write_to_file(new_file: &PathBuf, contents: String) -> Result<(), Error> {
