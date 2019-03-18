@@ -4,23 +4,13 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::io::Write;
 
-pub fn generate_rpc_traits_and_handler<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
-	// Box::new(|rpc, writer| generate_rpc_traits_and_handler(rpc, writer))
-    /* Example:
+pub fn generate_trait<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
+	/* Example:
         trait <service> {
             fn <func>(&self, arg: &<arg>) -> Result<<ret>, failure::Error>;
         }
-
-		fn handle_PublicRPC(data: &RpcData) -> Result<VecRpcData, Error> {
-			let serialized_arg = quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?;
-			match data.method_name.as_ref() {
-				"PublicRPC/publish_data" => PublicRPC::publish_data(serialized_arg),
-				_ => Vec::new(),
-			}
-		}
-    */
-
-    writeln!(w, "\npub trait {SERVICE} {{", SERVICE = rpc.service_name)?;
+	*/
+	writeln!(w, "\npub trait {SERVICE} {{", SERVICE = rpc.service_name)?;
 	let ret = "Vec<RpcData>"; // Formerly func.ret for ACTUAL ret... it won't work with code though.
     for func in rpc.functions.iter() {
         writeln!(w, "   fn {FUNC}(&self, _arg: {ARG}) -> std::result::Result<{RET}, failure::Error> {{", 
@@ -29,7 +19,57 @@ pub fn generate_rpc_traits_and_handler<W: Write + ?Sized>(rpc: &pb_rs::types::Rp
 		writeln!(w, "	}}")?;	
     }
     writeln!(w, "}}")?;
+	Ok(())
+}
 
+pub fn generate_send_functions<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
+	/* Example:
+        pub struct SendServerRPC;
+		impl ServerRPC for SendServerRPC {
+			pub fn add_entity(&self, data: ecs::UniqueIdentifier) -> Result<(), Error> {
+				let rpc = protocols::RpcData {
+					method_name: "ServerRPC/add_entity".to_string(),
+					schema: ecs::SCHEMA_URL.into(),
+					serialized_rpc_arg: quick_protobuf::serialize_into_vec(&data)?,
+					..Default::default()
+				};
+
+				ipraws::interface_rules::publish_for_supported_topics(rpc, SCHEMA_URL)
+			}
+		}
+	*/
+
+	let service_name = format!("{}", rpc.service_name);
+	let ret = "Vec<RpcData>"; // Formerly func.ret for ACTUAL ret... it won't work with code though.
+	writeln!(w, "pub struct Send{SERVICE};", SERVICE = service_name)?;
+	writeln!(w, "impl {SERVICE} for Send{SERVICE} {{", SERVICE = service_name)?;
+	for func in rpc.functions.iter() {
+        writeln!(w, "   fn {FUNC}(&self, data: {ARG}) -> std::result::Result<{RET}, failure::Error> {{", 
+            FUNC = func.name, ARG = func.arg, RET = ret)?; 
+		writeln!(w, "		let rpc = protocols::RpcData {{")?;
+		writeln!(w, " 			method_name: \"{}/{}\".to_string(),", SERVICE = service_name, FUNC = func.name)?;
+		writeln!(w, "			schema: SCHEMA_URL.into(),")?;
+		writeln!(w, "			serialized_rpc_arg: quick_protobuf::serialize_into_vec(&data)?,")?;
+		writeln!(w, " 			..Default::default()")?;
+		writeln!(w, "		}};\n")?;
+		writeln!(w, "		ipraws::interface_rules::publish_rpc_for_supported_topics(rpc, SCHEMA_URL)?;")?;
+		writeln!(w, "		Ok(vec![])")?;
+		writeln!(w, "	}}")?;	
+    }
+	writeln!(w, "}}")?;	
+	Ok(())
+}
+
+pub fn generate_handler<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
+	/* Example:
+        fn handle_PublicRPC(data: &RpcData) -> Result<VecRpcData, Error> {
+			let serialized_arg = quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?;
+			match data.method_name.as_ref() {
+				"PublicRPC/publish_data" => Ok(handler.publish_data(quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?)?.into()),
+				_ => Vec::new(),
+			}
+		}
+	*/
 	let service_name = rpc.service_name.clone();
 	writeln!(w, "pub fn handle_{SERVICE}<H: {SERVICE}>(data: &protocols::RpcData, {UNDERSCORE}handler: H) -> std::result::Result<protocols::VecRpcData, failure::Error> {{", 
 		SERVICE = service_name, UNDERSCORE = if rpc.functions.is_empty() { "_" } else { "" } )?;
@@ -45,6 +85,16 @@ pub fn generate_rpc_traits_and_handler<W: Write + ?Sized>(rpc: &pb_rs::types::Rp
 		writeln!(w, r#"		Err(failure::format_err!("Rpc is unsupported for {{:?}}. Cannot execute {{}}", data.schema, data.method_name))"#)?;
 	}
 	writeln!(w, "}}\n")?;
+	Ok(())
+}
+
+pub fn generate_rpc_traits_and_handler<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
+	// Example usage:
+	// Box::new(|rpc, writer| generate_rpc_traits_and_handler(rpc, writer))
+    
+	generate_trait(rpc, w)?;
+	generate_send_functions(rpc, w)?;
+	generate_handler(rpc, w)?;
 
     Ok(())
 }
