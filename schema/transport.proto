@@ -1,7 +1,7 @@
 syntax = "proto2";
 
 // This Schema represents how data will be sent to and from all foreign interfaces.
-//  It will allow personal modules to be sent to dynamic libraries, webasm, and locally
+//  It will allow personal modules to be sent to dynamic libraries, wasm, and locally
 //  Please NOTE: This is an INSECURE method of transport. All destinations for these messages should be FULLY TRUSTED!
 
 message SchemaIdentifier {

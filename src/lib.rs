@@ -40,10 +40,8 @@
 //! plugins = "*"
 //! ```
 
-#![feature(try_from)]
+#![feature(as_cell)]
 
-pub mod pluginhandler;
-pub mod buildfunctions;
 pub mod propagator;
 pub mod autogen;
 pub mod transportresponse;
@@ -52,8 +50,18 @@ pub mod utils;
 pub mod logging;
 pub mod transport_glue;
 pub mod rpcmacro;
+pub mod commonlibrary;
+pub mod pluginhandler;
 
-pub use crate::pluginhandler::{PluginHandler, DynamicLibraryLoader};
+#[cfg(not(target_arch = "wasm32"))]
+pub mod wasmhandler;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod buildfunctions;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::pluginhandler::{PluginHandler};
+
 pub use crate::transportresponse::TransportResponse;
 pub use crate::transport_glue::{TransportToModuleGlue, ModuleToTransportGlue};
 pub use crate::common::CommonModule;

@@ -2,7 +2,7 @@ use crate::transportresponse::TransportResponse;
 use crate::{ModuleInfo, Transport, Destination, TransportToModuleGlue, ModuleToTransportGlue};
 use crate::common::CommonModule;
 
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 
 #[derive(Default)]
@@ -91,7 +91,7 @@ impl Propagator for TransportNode {
         
         // Propagate and collect.
         let mut new_transports: Vec<Transport> = self.nodes.iter()
-            .map(|node| node.read().unwrap().propagate_transport(transport) )
+            .map(|node| node.write().unwrap().propagate_transport(transport) )
             .flatten()
             .collect();
         ret.append(&mut new_transports);

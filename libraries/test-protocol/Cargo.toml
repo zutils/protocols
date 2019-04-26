@@ -5,18 +5,18 @@ authors = ["James Prince <34577138+zutils@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-protobuf = "*"
 failure = "*"
 lazy_static = "*"
 protocols = { path = "../../../protocols/" }
 quick-protobuf = { path = "../../../quick-protobuf/quick-protobuf" }
 derive-new = "*"
 log = "*"
+hashbrown = "*"
 
 [build-dependencies]
 failure = "*"
 protocols = { path = "../../../protocols" }
 log = "*"
 
-[lib]
-crate-type = ["cdylib"]
+#[lib]
+#crate-type = ["cdylib"]

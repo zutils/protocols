@@ -13,34 +13,42 @@ edition = "2018"
 
 [dependencies]
 failure = "0.1.5"
-signals = "0.0.5"
-libloading = "0.5"
-notify = "4.0.7"
-glob = "0.2"
-pb-rs = { path = "../quick-protobuf/pb-rs", features = ["generateImplFromForEnums"] }
 quick-protobuf = { path = "../quick-protobuf/quick-protobuf" }
-ipfs-api = "0.5.0-alpha2"
-hyper = "0.12.23"
 log = "0.4.6"
-lazy_static = "1.2.0"
-reqwest = "0.9.9"
-fern = { version = "0.5.7", features = ["colored"] }
+lazy_static = "1.3.0"
+fern = { version = "0.5.8", features = ["colored"] }
 derive-new = "0.5.6"
+rand = "0.6.5"
+hashbrown = "0.3.0" 
 
 [build-dependencies]
 failure = "0.1.5"
+hyper = "0.12.27"
+futures = "0.1.26"
 pb-rs = { path = "../quick-protobuf/pb-rs", features = ["generateImplFromForEnums"]  }
-quick-protobuf = { path = "../quick-protobuf/quick-protobuf" }
-hyper = "0.12.21"
-ipfs-api = "0.5.0-alpha2"
+ipfs-api = "0.5.1"
 log = "0.4.6"
-reqwest = "0.9.9"
-lazy_static = "1.2.0"
+reqwest = "0.9.15"
+lazy_static = "1.3.0"
 derive-new = "0.5.6"
-fern = { version = "0.5.7", features = ["colored"] }
+fern = { version = "0.5.8", features = ["colored"] }
+hashbrown = "0.3.0"
 
 [dev-dependencies]
-test-protocol = { path = "./libraries/test-protocol" } # This is so that the dll gets created.
+test-protocol = { path = "./libraries/test-protocol" } # This is so that the library gets created.
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+hyper = "0.12.27"
+ipfs-api = "0.5.1"
+futures = "0.1.26"
+pb-rs = { path = "../quick-protobuf/pb-rs", features = ["generateImplFromForEnums"] }
+reqwest = "0.9.15"
+libloading = "0.5"
+wabt = "0.7.4"
+hashbrown = "0.3.0"
+wasmer-runtime = "0.3.0"
+wasmer-runtime-core = "0.3.0"
+wasmer-wasi = "0.3.0"
 
 [badges]
 travis-ci = { repository = "zutils/protocols" }

@@ -4,6 +4,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::io::Write;
 
+
 pub fn generate_trait<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
 	/* Example:
         trait <service> {
@@ -18,7 +19,7 @@ pub fn generate_trait<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut
 		writeln!(w, r#"		Err(failure::format_err!("No Rpc for {FUNC}!"))"#, FUNC = func.name)?;
 		writeln!(w, "	}}")?;	
     }
-    writeln!(w, "}}")?;
+    writeln!(w, "}}\n")?;
 	Ok(())
 }
 
@@ -34,14 +35,16 @@ pub fn generate_send_functions<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService
 					..Default::default()
 				};
 
-				ipraws::interface_rules::publish_for_supported_topics(rpc, SCHEMA_URL)
+				(self.func)(rpc)?;
+				Ok(vec![])
 			}
 		}
 	*/
 
 	let service_name = format!("{}", rpc.service_name);
 	let ret = "Vec<RpcData>"; // Formerly func.ret for ACTUAL ret... it won't work with code though.
-	writeln!(w, "pub struct Send{SERVICE};", SERVICE = service_name)?;
+	//writeln!(w, "#[derive(derive_new::new)]")?;
+	writeln!(w, "pub struct Send{SERVICE} {{ pub func: Box<Fn(protocols::RpcData) -> std::result::Result<(), failure::Error>> }}", SERVICE = service_name)?;
 	writeln!(w, "impl {SERVICE} for Send{SERVICE} {{", SERVICE = service_name)?;
 	for func in rpc.functions.iter() {
         writeln!(w, "   fn {FUNC}(&self, data: {ARG}) -> std::result::Result<{RET}, failure::Error> {{", 
@@ -52,7 +55,7 @@ pub fn generate_send_functions<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService
 		writeln!(w, "			serialized_rpc_arg: quick_protobuf::serialize_into_vec(&data)?,")?;
 		writeln!(w, " 			..Default::default()")?;
 		writeln!(w, "		}};\n")?;
-		writeln!(w, "		ipraws::interface_rules::publish_rpc_for_supported_topics(rpc, SCHEMA_URL)?;")?;
+		writeln!(w, "		(self.func)(rpc)?;")?;
 		writeln!(w, "		Ok(vec![])")?;
 		writeln!(w, "	}}")?;	
     }
@@ -132,7 +135,9 @@ pub fn build_rust_code_from_protobuffer_with_options(proto_filename: &PathBuf, i
 		custom_includes: includes,
     };
 
-    pb_rs::types::FileDescriptor::write_proto(&config).unwrap();
+    if let Err(e) = pb_rs::types::FileDescriptor::write_proto(&config) {
+		return Err(failure::format_err!("{:?}", e));
+	}
 
 	log::info!("Pb-rs ran on {:?} and created {:?}", proto_filename, out_file);
 
@@ -141,9 +146,10 @@ pub fn build_rust_code_from_protobuffer_with_options(proto_filename: &PathBuf, i
 
 /// Adds the file to IPFS so that 1) we can get it's hash and 2) So that we can generate a schema url from that hash
 /// In parent program, lib.rs loads in the schema_link at compile time so that the library can use it.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
-	use hyper::rt::Future;
 	use std::sync::{Arc, Mutex};
+	use futures::future::Future;
 	let client = ipfs_api::IpfsClient::default();
 	
 	// Create atomics for hyper
@@ -153,7 +159,13 @@ pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
 	let hash_clone = hash.clone();
 
 	log::info!("Adding {:?} to ipfs...", path);
-	let file = File::open(path)?;
+
+	let file = std::fs::File::open(path)?;
+	/*let client = reqwest::Client::new();
+	let mut res = client.post("http://localhost:5001/api/v0/add").body(file).send()?;
+
+	println!("Result from add: {:?}", res);*/
+
 	let req = client
 		.add(file)
 		.map(move |result| { 
@@ -172,7 +184,8 @@ pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
 		panic!(r#"Unable to retrieve schema URL from ipfs. Make sure that IPFS daemon is running! You can get IPFS from ipfs.io\nIf you REALLY don't want to use ipfs, and care to handle the schema_link manually, modify your build.rs file."#);
 	}
 
-	let hash = hash.lock().unwrap().clone();
+	//let hash = res.text()?;
+	let hash = hash.lock().unwrap().to_string();
     Ok(hash)
 }
 
@@ -221,8 +234,8 @@ pub fn create_schema_urls_rs() -> Result<(), Error> {
 	let schema_urls_rs = get_schema_urls_rs_path();
 
 	let mut file_data = String::new();
-	file_data += "pub fn get_all_aliases() -> ::std::collections::HashMap<String, &'static str> {\n";
-	file_data += "\tlet mut ret = ::std::collections::HashMap::new();\n";
+	file_data += "pub fn get_all_aliases() -> hashbrown::HashMap<String, &'static str> {\n";
+	file_data += "\tlet mut ret = hashbrown::HashMap::new();\n";
 	file_data += "\t// __SCHEMA_MAP_INSERT__ Do not remove this line. This line is used to add new protocols.\n";
 	file_data += "\tret\n";
 	file_data += "}\n";
@@ -292,8 +305,6 @@ pub fn for_all_in_dir(path_str: &str, func: fn(&PathBuf) -> Result<(), Error>) {
 }
 
 pub fn write_to_file(new_file: &PathBuf, contents: String) -> Result<(), Error> {
-	use std::io::Write;
-
 	create_necessary_path_from_file_name(new_file)?;
 
 	log::info!("Writing file: {:?}", new_file);

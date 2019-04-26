@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 use std::thread::{self, ThreadId};
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 lazy_static::lazy_static! {
     static ref TAB_HASH: Mutex<HashMap<ThreadId, usize>> = { std::sync::Mutex::new(HashMap::new()) };
@@ -34,7 +34,7 @@ pub fn initialize_standard_logging(log_prefix: &'static str) -> Result<(), failu
             match record.level() {
                 log::Level::Info => out.finish(format_args!("{}{}{}", formatted, colors.color(record.level()), message)),
                 log::Level::Debug => out.finish(format_args!("{}{}", formatted, message)),
-                log::Level::Trace => out.finish(format_args!("{}{}", formatted, message)),
+                log::Level::Trace => out.finish(format_args!("{}{}{}", formatted, record.target(), message)),
                 _ => out.finish(format_args!("{}{}{}", formatted, colors.color(record.level()), message)),
             }
 
@@ -50,7 +50,13 @@ pub fn initialize_standard_logging(log_prefix: &'static str) -> Result<(), failu
         .level_for("tokio_reactor", log::LevelFilter::Info)
         .level_for("tokio_threadpool", log::LevelFilter::Info)
         .level_for("reqwest", log::LevelFilter::Info)
-        .level_for("want", log::LevelFilter::Info)
+        .level_for("wasmer_runtime_core", log::LevelFilter::Info)
+        .level_for("wasmer_runtime", log::LevelFilter::Info)
+        .level_for("wasmer_wasi", log::LevelFilter::Info)
+        .level_for("wasmer", log::LevelFilter::Info)
+        .level_for("wabt", log::LevelFilter::Info)
+        .level_for("cranelift_codegen", log::LevelFilter::Info)
+        .level_for("cranelift_wasm", log::LevelFilter::Warn)
         // Output to stdout, files, and other Dispatch configurations
         .chain(std::io::stdout())
         // Apply globally

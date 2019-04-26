@@ -6,7 +6,7 @@ use crate::{Transport, Data, RpcData, ModuleInfo, VecModuleInfo, VecData, VecRpc
 use crate::autogen::transport::{mod_DataType, DataType};
 
 use failure::Error;
-use core::convert::TryInto;
+use std::convert::TryInto;
 
 pub struct TransportResponse;
 impl TransportResponse {
@@ -23,7 +23,7 @@ impl TransportResponse {
     }
 }
 
-/// Returning transports can be poisoned via webasm unsafe code and can be a security risk if not handled properly!!!
+/// Returning transports can be poisoned via wasm unsafe code and can be a security risk if not handled properly!!!
 fn filter_some_and_print_errors(results: Vec<Transport>) -> Vec<mod_DataType::OneOfresult> {
     results.into_iter()
         .filter_map(|transport| match transport.payload.result {
