@@ -115,11 +115,12 @@ pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<Path
 /// Call protoc on protobuffer and create non-rpc code
 pub fn build_rust_code_from_protobuffer_with_options(proto_filename: &PathBuf, includes: Vec<String>, rpc_generator: pb_rs::types::RpcGeneratorFunction) -> Result<PathBuf, Error> {
 	use pb_rs::types::Config;
-	log::info!("Building protobuf for {:?}", &proto_filename);
+	log::info!("Building protobuf for {:?}...", &proto_filename);
 
 	let out_dir = autogen_dir();
 	std::fs::create_dir_all(&out_dir)?;
-	let out_file = get_protobuf_generated_file(proto_filename);
+	let out_file = get_protobuf_generated_filename(proto_filename);
+	log::info!("Generating {:?}.", out_file);
 
     let config = Config {
         in_file: proto_filename.to_owned(),
@@ -139,7 +140,7 @@ pub fn build_rust_code_from_protobuffer_with_options(proto_filename: &PathBuf, i
 		return Err(failure::format_err!("{:?}", e));
 	}
 
-	log::info!("Pb-rs ran on {:?} and created {:?}", proto_filename, out_file);
+	log::info!("...Pb-rs ran on {:?} and created {:?}", proto_filename, out_file);
 
 	Ok(out_file)
 }
@@ -320,7 +321,7 @@ fn create_necessary_path_from_file_name(file_path: &PathBuf) -> Result<(), Error
 	Ok(())
 }
 
-fn get_protobuf_generated_file(proto_filename: &PathBuf) -> PathBuf {
+fn get_protobuf_generated_filename(proto_filename: &PathBuf) -> PathBuf {
 	// Figure out the file that was generated.
 	let base_name = base_name(proto_filename);
 	let mut out_file = autogen_dir();
@@ -333,7 +334,7 @@ pub fn base_name(protobuf_path: &PathBuf) -> String {
 	base_name
 }
 
-fn autogen_dir() -> PathBuf {
+pub fn autogen_dir() -> PathBuf {
 	let mut dir = PathBuf::from(std::env::current_dir().unwrap());
 	dir.push("src");
 	dir.push("autogen");
