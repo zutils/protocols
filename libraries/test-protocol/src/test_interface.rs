@@ -1,4 +1,4 @@
-use crate::autogen::test;
+use crate::autogen_protobuf::test;
 
 use protocols::{CommonModule, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
 
@@ -62,7 +62,7 @@ mod tests {
     }*/
 
     fn test_send_receive(plugin_filename: &PathBuf) -> Result<(), failure::Error> {
-        use crate::autogen::test::ClientRPC; // For send_test()
+        use crate::autogen_protobuf::test::ClientRPC; // For send_test()
         protocols::logging::initialize_standard_logging("")?;
 
         // We need Sync and Send memory for send_test(...)

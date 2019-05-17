@@ -4,5 +4,5 @@ libraries/test-protocol/target
 Cargo.lock
 .vscode/
 
-/libraries/*/src/autogen_protobuf/*
-/src/autogen_protobuf/*
+/example/*/src/autogen_*/*
+/src/autogen_*/*

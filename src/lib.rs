@@ -43,7 +43,7 @@
 #![feature(as_cell)]
 
 pub mod propagator;
-pub mod autogen;
+pub mod autogen_protobuf;
 pub mod transportresponse;
 pub mod common;
 pub mod utils;
@@ -65,6 +65,6 @@ pub use crate::pluginhandler::{PluginHandler};
 pub use crate::transportresponse::TransportResponse;
 pub use crate::transport_glue::{TransportToModuleGlue, ModuleToTransportGlue};
 pub use crate::common::CommonModule;
-pub use crate::autogen::transport::{Transport, Sender, VecTransport, SchemaIdentifier, ModuleInfo, 
+pub use crate::autogen_protobuf::transport::{Transport, Sender, VecTransport, SchemaIdentifier, ModuleInfo, 
                 Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData, PeerIdentifier};
 

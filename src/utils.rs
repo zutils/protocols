@@ -1,4 +1,4 @@
-use crate::autogen::transport::{ SchemaIdentifier};
+use crate::autogen_protobuf::transport::{ SchemaIdentifier};
 
 impl From<&str> for SchemaIdentifier {
     fn from(f: &str) -> SchemaIdentifier {

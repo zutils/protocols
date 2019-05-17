@@ -4,7 +4,7 @@ use crate::{Destination, RpcData, Transport, VecModuleInfo, VecRpcData};
 use crate::propagator::Propagator;
 use crate::common::CommonModule;
 use crate::transportresponse::TransportResponse;
-use crate::autogen::transport::{DataType, RequestType, mod_DataType};
+use crate::autogen_protobuf::transport::{DataType, RequestType, mod_DataType};
 
 use std::convert::TryInto;
 use failure::Error;
