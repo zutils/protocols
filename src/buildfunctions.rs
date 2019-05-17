@@ -182,7 +182,7 @@ pub fn add_file_to_ipfs(path: &PathBuf) -> Result<String, Error> {
 
 	// We have to panic in the main thread.
 	if *should_panic.lock().unwrap() == true {
-		panic!(r#"Unable to retrieve schema URL from ipfs. Make sure that IPFS daemon is running! You can get IPFS from ipfs.io\nIf you REALLY don't want to use ipfs, and care to handle the schema_link manually, modify your build.rs file."#);
+		panic!(r#"Unable to retrieve schema URL from ipfs. Make sure that IPFS daemon is running! You can get IPFS from ipfs.io\nRun Command: ipfs daemon --enable-pubsub-experiment\n"#);
 	}
 
 	//let hash = res.text()?;
@@ -337,6 +337,6 @@ pub fn base_name(protobuf_path: &PathBuf) -> String {
 pub fn autogen_dir() -> PathBuf {
 	let mut dir = PathBuf::from(std::env::current_dir().unwrap());
 	dir.push("src");
-	dir.push("autogen");
+	dir.push("autogen_protobuf");
 	dir
 }

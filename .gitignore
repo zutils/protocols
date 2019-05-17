@@ -1,10 +1,8 @@
 /target
 **/*.rs.bk
 libraries/test-protocol/target
-example/target
 Cargo.lock
 .vscode/
 
-/libraries/*/src/autogen/*
-/example/src/autogen/*
-/src/autogen/*
+/libraries/*/src/autogen_protobuf/*
+/src/autogen_protobuf/*
