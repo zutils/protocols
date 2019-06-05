@@ -1,6 +1,6 @@
 use crate::autogen_protobuf::test;
 
-use protocols::{CommonModule, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
+use protocols::{CommonModelFunctions, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
 
 struct ClientRPCHandler;
 struct ServerRPCHandler;
@@ -10,7 +10,7 @@ impl test::ServerRPC for ServerRPCHandler {}
 impl test::PublicRPC for PublicRPCHandler {}
 
 pub struct Interface;
-impl CommonModule for Interface {
+impl CommonModelFunctions for Interface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, failure::Error> {
         let info = ModuleInfo::new(test::SCHEMA_URL.into(), "test".to_string());
         Ok(VecModuleInfo::new(vec![info]))
@@ -28,7 +28,7 @@ impl CommonModule for Interface {
         test::handle_PublicRPC(data, PublicRPCHandler{})
     }
 }
-//protocols::implCommonModule!(test, SCHEMA_URL);
+//protocols::implCommonModelFunctions!(test, SCHEMA_URL);
 
 impl test::ClientRPC for ClientRPCHandler {
     fn send_test(&self, data: test::Test) -> Result<Vec<RpcData>, failure::Error> {
@@ -82,7 +82,7 @@ mod tests {
     }
 
     fn receive_plugin(plugin_filename: &PathBuf, data: &[u8]) -> Result<(), failure::Error> {
-        use protocols::{ModuleToTransportGlue};
+        //use protocols::{ModelFunctionToTransportGlue};
 
         // Initialize plugin handler. The PluginHandler is ALSO our module root.
         let mut handler = protocols::PluginHandler::new();

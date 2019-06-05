@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use hashbrown::HashMap;
 use failure::Error;
 
-use crate::{Transport, VecTransport};
+use crate::{ RequestTransport, ReturnTransport };
 
 /*#[cfg(not(target_arch = "wasm32"))]
 impl From<PathBuf> for WasmModule {
@@ -37,7 +37,7 @@ impl WasmModule {
     pub fn load(&mut self) -> Result<(), Error> {
         use std::io::Read;
         
-        let mut wasi_import_object = wasmer_wasi::generate_import_object(vec![], vec![]);
+        let mut wasi_import_object = wasmer_wasi::generate_import_object(vec![], vec![], vec![]);
 
         let import_object = wasmer_runtime::imports! {
             "env" => {
@@ -100,28 +100,28 @@ impl WasmModule {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl crate::commonlibrary::CommonFFI for WasmModule {
-    fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
-        log::trace!("Calling wasm FFI function 'propagate_ffi(...)'...");
+    fn call_ffi_handle_request(&self, transport: &RequestTransport) -> Result<ReturnTransport, Error> {
+        log::trace!("Calling wasm FFI function 'handle_request_ffi(...)'...");
 
         let bytes = quick_protobuf::serialize_into_vec(transport)?;
-        let results = self.invoke_with_hacky_bytes_arg("propagate_ffi_wasm", &bytes)?;
+        let results = self.invoke_with_hacky_bytes_arg("handle_request_ffi_wasm", &bytes)?;
         // Results is an identifier of what is to be returned.
         // The module could send back a DIFFERENT identifier of another module (if it can guess it)
         // If this happens, then it can trick unsafe data paths when safe modules return!
         // TODO WARNING!: This NEEDS TO BE FIXED BEFORE RELEASE!
         let identifier = match results.get(0) {
             Some(wasmer_runtime::Value::I32(identifier)) => identifier,
-            Some(other) => return Err(failure::format_err!("call_ffi_propagate did not return an i32! Found {:?}", other)),
-            None => return Err(failure::format_err!("call_ffi_propagate did not return anything! Expecting an i32!")),
+            Some(other) => return Err(failure::format_err!("call_ffi_handle_request did not return an i32! Found {:?}", other)),
+            None => return Err(failure::format_err!("call_ffi_handle_request did not return anything! Expecting an i32!")),
         };
 
         let from_ffi = RETURN_IDENTIFIER.lock().unwrap().remove(identifier)
-            .ok_or(failure::format_err!("return_data result does not exist in map for call_ffi_propagate!"))?;
+            .ok_or(failure::format_err!("return_data result does not exist in map for call_ffi_handle_request!"))?;
 
         // Read back from UNIQUE_CALLS.
-        let ret: VecTransport = quick_protobuf::deserialize_from_slice(&from_ffi)?;
+        let ret: ReturnTransport = quick_protobuf::deserialize_from_slice(&from_ffi)?;
         log::trace!("...Received from FFI: {:?}", ret);
-        Ok(ret.vec)
+        Ok(ret)
     }
 
     fn call_ffi_init(&self) -> Result<(), Error> {

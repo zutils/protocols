@@ -19,36 +19,37 @@ lazy_static = "1.3.0"
 fern = { version = "0.5.8", features = ["colored"] }
 derive-new = "0.5.6"
 rand = "0.6.5"
-hashbrown = "0.3.0" 
+hashbrown = "0.4.0" 
+uuid = { version = "0.7.4", features = ["v4"] }
 
 [build-dependencies]
 failure = "0.1.5"
-hyper = "0.12.27"
-futures = "0.1.26"
+hyper = "0.12.29"
+futures = "0.1.27"
 pb-rs = { path = "../quick-protobuf/pb-rs", features = ["generateImplFromForEnums"]  }
 ipfs-api = "0.5.1"
 log = "0.4.6"
-reqwest = "0.9.15"
+reqwest = "0.9.17"
 lazy_static = "1.3.0"
 derive-new = "0.5.6"
 fern = { version = "0.5.8", features = ["colored"] }
-hashbrown = "0.3.0"
+hashbrown = "0.4.0"
 
 [dev-dependencies]
 test-protocol = { path = "./libraries/test-protocol" } # This is so that the library gets created.
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-hyper = "0.12.27"
+hyper = "0.12.29"
 ipfs-api = "0.5.1"
-futures = "0.1.26"
+futures = "0.1.27"
 pb-rs = { path = "../quick-protobuf/pb-rs", features = ["generateImplFromForEnums"] }
-reqwest = "0.9.15"
+reqwest = "0.9.17"
 libloading = "0.5"
 wabt = "0.7.4"
-hashbrown = "0.3.0"
-wasmer-runtime = "0.3.0"
-wasmer-runtime-core = "0.3.0"
-wasmer-wasi = "0.3.0"
+hashbrown = "0.4.0"
+wasmer-runtime = "0.4.2"
+wasmer-runtime-core = "0.4.2"
+wasmer-wasi = "0.4.2"
 
 [badges]
 travis-ci = { repository = "zutils/protocols" }

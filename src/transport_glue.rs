@@ -1,133 +1,181 @@
 #![allow(non_snake_case)]
 
-use crate::{Destination, RpcData, Transport, VecModuleInfo, VecRpcData};
-use crate::propagator::Propagator;
-use crate::common::CommonModule;
+use crate::transporter::{Transporter, RootTransporter};
 use crate::transportresponse::TransportResponse;
-use crate::autogen_protobuf::transport::{DataType, RequestType, mod_DataType};
+use crate::common::*;
+use crate::autogen_protobuf::transport::*;
 
 use std::convert::TryInto;
 use failure::Error;
 
-// Anywhere there is a common module, we want transports working with them.
-impl<T> TransportToModuleGlue for T where T: CommonModule {}
+// Anywhere there is a common model or structure, we want transports working with them.
+impl<T> TransportToModelGlue for T where T: CommonModelFunctions {}
+impl<T> TransportToProcessorGlue for T where T: CommonStructureFunctions {}
 
 /// These functions are the endpoints to the different modules.
-pub trait TransportToModuleGlue: CommonModule {
-    fn handle_transport(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
+pub trait TransportToProcessorGlue: CommonStructureFunctions {
+    fn handle_transport(&mut self, transport: &RequestTransport) -> Result<ReturnTransport, Error> {
         // Pass on transport to proper function
-        match transport.request_type {
-            RequestType::GET_INFO => self.get_info_glue(transport),
-            RequestType::RECEIVE_RPC_AS_CLIENT => self.receive_rpc_as_client_glue(transport),
-            RequestType::RECEIVE_RPC_AS_SERVER => self.receive_rpc_as_server_glue(transport),
-            RequestType::RECEIVE_PUBLIC_RPC => self.receive_public_rpc_glue(transport),
+        match transport.requestFunctionType {
+            RequestFunctionType::PROCESS => self.process_glue(transport),
+            other => return Err(failure::format_err!("{:?} request function type unsupported!", other)),
         }
     }
 
-    fn get_info_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> {
-        if let mod_DataType::OneOfresult::destination(msg) = &transport.payload.result {
-            let module_ret = self.get_info(&msg)?;
-            let result = mod_DataType::OneOfresult::vecmoduleinfo(module_ret);
-            let ret = TransportResponse::create_Transport_result(result);
-            Ok(vec![ret])    
+    fn process_glue(&mut self, transport: &RequestTransport) -> Result<ReturnTransport, Error> {
+        if let mod_RequestData::OneOfdata::datachanges(msg) = &transport.payload.data {
+            let module_ret = self.process(&msg)?;
+            Ok(TransportResponse::create(module_ret.into()))
         } else {
-            Err(failure::format_err!("No Destination found!"))
+            Err(failure::format_err!("Improper data type for update_data(DataChanges) message!"))
+        }
+    }
+}
+
+/// These functions are the endpoints to the different modules.
+pub trait TransportToModelGlue: CommonModelFunctions {
+    fn handle_transport(&mut self, transport: &RequestTransport) -> Result<ReturnTransport, Error> {
+        // Pass on transport to proper function
+        match transport.requestFunctionType {
+            RequestFunctionType::CONSTRUCTOR => self.constructor_glue(transport),
+            RequestFunctionType::DESTRUCTOR => self.destructor_glue(transport),
+            RequestFunctionType::UPDATE_DATA => self.update_data_glue(transport),
+            other => return Err(failure::format_err!("{:?} request function type unsupported!", other)),
         }
     }
 
-    fn receive_rpc_as_client_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-        if let mod_DataType::OneOfresult::rpcdata(msg) = &transport.payload.result {
-            let module_ret = self.receive_rpc_as_client(&msg)?;
-            let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
-            let ret = TransportResponse::create_Transport_result(result);
-            Ok(vec![ret])    
+    fn constructor_glue(&mut self, transport: &RequestTransport) -> Result<ReturnTransport, Error> {
+        if let mod_RequestData::OneOfdata::datachanges(msg) = &transport.payload.data {
+            let module_ret = self.constructor(&msg)?;
+            Ok(TransportResponse::create(module_ret.into()))
         } else {
-            Err(failure::format_err!("No Destination found!"))
+            Err(failure::format_err!("Improper data type for constructor(DataChanges) message!"))
         }
     }
 
-    fn receive_rpc_as_server_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-            if let mod_DataType::OneOfresult::rpcdata(msg) = &transport.payload.result {
-                let module_ret = self.receive_rpc_as_server(&msg)?;
-                let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
-                let ret = TransportResponse::create_Transport_result(result);
-                Ok(vec![ret])    
-            } else {
-                Err(failure::format_err!("No Destination found!"))
-            }
+    fn destructor_glue(&mut self, transport: &RequestTransport) -> Result<ReturnTransport, Error> {
+        if let mod_RequestData::OneOfdata::datachanges(msg) = &transport.payload.data {
+            let module_ret = self.destructor(&msg)?;
+            Ok(TransportResponse::create(module_ret.into()))
+        } else {
+            Err(failure::format_err!("Improper data type for destructor(DataChanges) message!"))
+        }
     }
 
-    fn receive_public_rpc_glue(&self, transport: &Transport) -> Result<Vec<Transport>, Error> { 
-        if let mod_DataType::OneOfresult::rpcdata(msg) = &transport.payload.result {
-            let module_ret = self.receive_public_rpc(&msg)?;
-            let result = mod_DataType::OneOfresult::vecrpcdata(module_ret);
-            let ret = TransportResponse::create_Transport_result(result);
-            Ok(vec![ret])    
+    fn update_data_glue(&mut self, transport: &RequestTransport) -> Result<ReturnTransport, Error> { 
+        if let mod_RequestData::OneOfdata::datachanges(msg) = &transport.payload.data {
+            let module_ret = self.update_data(&msg)?;
+            Ok(TransportResponse::create(module_ret.into()))
         } else {
-            Err(failure::format_err!("No Destination found!"))
+            Err(failure::format_err!("Improper data type for update_data(DataChanges) message!"))
         }
     }
 }
 
 /// This is glue to package up requests into Transports and unpacking them.
-pub trait ModuleToTransportGlue: Propagator {
-    fn get_info(&self, data: Destination) -> Result<VecModuleInfo, Error> {
-        log::debug!("Propagating get_info({:?})", data);
-        let transport = TransportRequest::create_GET_INFO(data);
-        self.propagate_transport(&transport).try_into()
+pub trait ModelFunctionToTransportGlue: RootTransporter {
+    fn constructor(&mut self, changes: DataChanges) -> Result<(), Error> {
+        match self.descriptor_to_module_id(&changes.descriptor) {
+            Some(module_id) => {
+                let transport = TransportRequest::create_CONSTRUCTOR(module_id, changes.id);
+                log::debug!("Calling constructor({:?})", transport);
+                let pending_changes: VecDataChanges = self.transport_data(&transport).try_into()?;
+                for change in pending_changes.vec {
+                    if let Err(e) = self.constructor(change) {
+                        log::warn!("{:?}", e);
+                    }
+                }
+            },
+            None => log::warn!("No module for descriptor {:?}!", changes.descriptor),
+        }
+        Ok(())
     }
 
-    fn receive_rpc_as_client(&self, data: RpcData) -> Result<VecRpcData, Error> {
-        log::debug!("Propagating receive_rpc_as_client({:?})", data);
-        let transport = TransportRequest::create_RECEIVE_RPC_AS_CLIENT(data);
-        self.propagate_transport(&transport).try_into()
+    fn destructor(&mut self, changes: DataChanges) -> Result<VecId, Error> {
+        match self.descriptor_to_module_id(&changes.descriptor) {
+            Some(module_id) => {
+                let transport = TransportRequest::create_DESTRUCTOR(module_id, changes.id);
+                log::debug!("Calling destructor({:?})", transport);
+                let pending_changes: VecDataChanges = self.transport_data(&transport).try_into()?;
+                for change in pending_changes.vec {
+                    if let Err(e) = self.destructor(change) {
+                        log::warn!("{:?}", e);
+                    }
+                }
+            },
+            None => log::warn!("No module for descriptor {:?}!", changes.descriptor),
+        }
+        Ok(())
     }
 
-    fn receive_rpc_as_server(&self, data: RpcData) -> Result<VecRpcData, Error> {
-        log::debug!("Propagating receive_rpc_as_server({:?})", data);
-        let transport = TransportRequest::create_RECEIVE_RPC_AS_SERVER(data);
-        self.propagate_transport(&transport).try_into()
-    }
-
-    fn receive_public_rpc(&self, data: RpcData) -> Result<VecRpcData, Error> {
-        log::debug!("Propagating receive_public_rpc({:?})", data);
-        let transport = TransportRequest::create_RECEIVE_PUBLIC_RPC(data);
-        self.propagate_transport(&transport).try_into()
+    fn update_data(&mut self, changes: DataChanges) -> Result<VecDataChanges, Error> {
+        match self.descriptor_to_module_id(&changes.descriptor) {
+            Some(module_id) => {
+                let transport = TransportRequest::create_UPDATE_DATA(module_id, changes.id);
+                log::debug!("Calling update_data({:?})", transport);
+                let pending_changes: VecDataChanges = self.transport_data(&transport).try_into()?;
+                for change in pending_changes.vec {
+                    if let Err(e) = self.update_data(change) {
+                        log::warn!("{:?}", e);
+                    }
+                }
+            },
+            None => log::warn!("No module for descriptor {:?}!", changes.descriptor),
+        }
+        Ok(())
     }
 }
 
+/// This is glue to package up requests into Transports and unpacking them.
+pub trait StructureFunctionToTransportGlue: Transporter {
+    fn process(&mut self, data: DataChanges) -> Result<DataChanges, Error> {
+        match self.descriptor_to_module_id(&data.descriptor) {
+            Some(module_id) => {
+                let transport = TransportRequest::create_PROCESS(module_id, data);
+                log::debug!("Calling process({:?})", transport);
+                let changes: DataChanges = self.transport_data(&transport).try_into()?;
+                if let Err(e) = self.update_data(changes) {
+                    log::warn!("{:?}", e);
+                }
+            },
+            None => log::warn!("No module for descriptor {:?}!", data.descriptor),
+        }
+        Ok(())
+    }
+}
 
+#[derive(Default)]
 pub struct TransportRequest;
 impl TransportRequest {
-    pub fn create_GET_INFO(data: Destination) -> Transport {
-        Transport {
-            destination: Some(data.schema.clone()),
-            payload: DataType::new(mod_DataType::OneOfresult::destination(data)),
-            request_type: RequestType::GET_INFO,
+    pub fn create_CONSTRUCTOR(module_id: &ModuleId, data: DataChanges) -> RequestTransport {
+        RequestTransport {
+            moduleId: module_id.clone(),
+            payload: RequestData::new(mod_RequestData::OneOfdata::datachanges(data)),
+            requestFunctionType: RequestFunctionType::CONSTRUCTOR,
         }
     }
 
-    pub fn create_RECEIVE_RPC_AS_CLIENT(data: RpcData) -> Transport {
-        Transport {
-            destination: Some(data.schema.clone()),
-            payload: DataType::new(mod_DataType::OneOfresult::rpcdata(data)),
-            request_type: RequestType::RECEIVE_RPC_AS_CLIENT,
+    pub fn create_DESTRUCTOR(module_id: &ModuleId, data: DataChanges) -> RequestTransport {
+        RequestTransport {
+            moduleId: module_id.clone(),
+            payload: RequestData::new(mod_RequestData::OneOfdata::datachanges(data)),
+            requestFunctionType: RequestFunctionType::DESTRUCTOR,
         }
     }
 
-    pub fn create_RECEIVE_RPC_AS_SERVER(data: RpcData) -> Transport {
-        Transport {
-            destination: Some(data.schema.clone()),
-            payload: DataType::new(mod_DataType::OneOfresult::rpcdata(data)),
-            request_type: RequestType::RECEIVE_RPC_AS_SERVER,
+    pub fn create_UPDATE_DATA(module_id: &ModuleId, data: DataChanges) -> RequestTransport {
+        RequestTransport {
+            moduleId: module_id.clone(),
+            payload: RequestData::new(mod_RequestData::OneOfdata::datachanges(data)),
+            requestFunctionType: RequestFunctionType::UPDATE_DATA,
         }
     }
 
-    pub fn create_RECEIVE_PUBLIC_RPC(data: RpcData) -> Transport {
-        Transport {
-            destination: Some(data.schema.clone()),
-            payload: DataType::new(mod_DataType::OneOfresult::rpcdata(data)),
-            request_type: RequestType::RECEIVE_PUBLIC_RPC,
+    pub fn create_PROCESS(module_id: &ModuleId, data: DataChanges) -> RequestTransport {
+        RequestTransport {
+            moduleId: module_id.clone(),
+            payload: RequestData::new(mod_RequestData::OneOfdata::datachanges(data)),
+            requestFunctionType: RequestFunctionType::PROCESS,
         }
     }
 }

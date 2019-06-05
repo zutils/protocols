@@ -5,111 +5,13 @@ use std::path::PathBuf;
 use std::io::Write;
 
 
-pub fn generate_trait<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
-	/* Example:
-        trait <service> {
-            fn <func>(&self, arg: &<arg>) -> Result<<ret>, failure::Error>;
-        }
-	*/
-	writeln!(w, "\npub trait {SERVICE} {{", SERVICE = rpc.service_name)?;
-	let ret = "Vec<RpcData>"; // Formerly func.ret for ACTUAL ret... it won't work with code though.
-    for func in rpc.functions.iter() {
-        writeln!(w, "   fn {FUNC}(&self, _arg: {ARG}) -> std::result::Result<{RET}, failure::Error> {{", 
-            FUNC = func.name, ARG = func.arg, RET = ret)?; 
-		writeln!(w, r#"		Err(failure::format_err!("No Rpc for {FUNC}!"))"#, FUNC = func.name)?;
-		writeln!(w, "	}}")?;	
-    }
-    writeln!(w, "}}\n")?;
-	Ok(())
-}
-
-pub fn generate_send_functions<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
-	/* Example:
-        pub struct SendServerRPC;
-		impl ServerRPC for SendServerRPC {
-			pub fn add_entity(&self, data: ecs::UniqueIdentifier) -> Result<(), Error> {
-				let rpc = protocols::RpcData {
-					method_name: "ServerRPC/add_entity".to_string(),
-					schema: ecs::SCHEMA_URL.into(),
-					serialized_rpc_arg: quick_protobuf::serialize_into_vec(&data)?,
-					..Default::default()
-				};
-
-				(self.func)(rpc)?;
-				Ok(vec![])
-			}
-		}
-	*/
-
-	let service_name = format!("{}", rpc.service_name);
-	let ret = "Vec<RpcData>"; // Formerly func.ret for ACTUAL ret... it won't work with code though.
-	//writeln!(w, "#[derive(derive_new::new)]")?;
-	writeln!(w, "pub struct Send{SERVICE} {{ pub func: Box<Fn(protocols::RpcData) -> std::result::Result<(), failure::Error>> }}", SERVICE = service_name)?;
-	writeln!(w, "impl {SERVICE} for Send{SERVICE} {{", SERVICE = service_name)?;
-	for func in rpc.functions.iter() {
-        writeln!(w, "   fn {FUNC}(&self, data: {ARG}) -> std::result::Result<{RET}, failure::Error> {{", 
-            FUNC = func.name, ARG = func.arg, RET = ret)?; 
-		writeln!(w, "		let rpc = protocols::RpcData {{")?;
-		writeln!(w, " 			method_name: \"{}/{}\".to_string(),", SERVICE = service_name, FUNC = func.name)?;
-		writeln!(w, "			schema: SCHEMA_URL.into(),")?;
-		writeln!(w, "			serialized_rpc_arg: quick_protobuf::serialize_into_vec(&data)?,")?;
-		writeln!(w, " 			..Default::default()")?;
-		writeln!(w, "		}};\n")?;
-		writeln!(w, "		(self.func)(rpc)?;")?;
-		writeln!(w, "		Ok(vec![])")?;
-		writeln!(w, "	}}")?;	
-    }
-	writeln!(w, "}}")?;	
-	Ok(())
-}
-
-pub fn generate_handler<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
-	/* Example:
-        fn handle_PublicRPC(data: &RpcData) -> Result<VecRpcData, Error> {
-			let serialized_arg = quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?;
-			match data.method_name.as_ref() {
-				"PublicRPC/publish_data" => Ok(handler.publish_data(quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?)?.into()),
-				_ => Vec::new(),
-			}
-		}
-	*/
-	let service_name = rpc.service_name.clone();
-	writeln!(w, "pub fn handle_{SERVICE}<H: {SERVICE}>(data: &protocols::RpcData, {UNDERSCORE}handler: H) -> std::result::Result<protocols::VecRpcData, failure::Error> {{", 
-		SERVICE = service_name, UNDERSCORE = if rpc.functions.is_empty() { "_" } else { "" } )?;
-	if !rpc.functions.is_empty() {
-		writeln!(w, "	match data.method_name.as_ref() {{")?;
-		for func in rpc.functions.iter() {
-			writeln!(w, r#"			"{SERVICE}/{FUNC}" => Ok(handler.{FUNC}(quick_protobuf::deserialize_from_slice(&data.serialized_rpc_arg)?)?.into()),"#, 
-				SERVICE = service_name, FUNC = func.name)?;
-		}
-		writeln!(w, r#"		_ => Err(failure::format_err!("Cannot find rpc function {{}}", data.method_name)),"#)?;
-		writeln!(w, "	}}\n")?;
-	} else {
-		writeln!(w, r#"		Err(failure::format_err!("Rpc is unsupported for {{:?}}. Cannot execute {{}}", data.schema, data.method_name))"#)?;
-	}
-	writeln!(w, "}}\n")?;
-	Ok(())
-}
-
-pub fn generate_rpc_traits_and_handler<W: Write + ?Sized>(rpc: &pb_rs::types::RpcService, w: &mut W) -> Result<(), pb_rs::errors::Error> {
-	// Example usage:
-	// Box::new(|rpc, writer| generate_rpc_traits_and_handler(rpc, writer))
-    
-	generate_trait(rpc, w)?;
-	generate_send_functions(rpc, w)?;
-	generate_handler(rpc, w)?;
-
-    Ok(())
-}
-
 pub fn build_rust_code_from_protobuffer(proto_filename: &PathBuf) -> Result<PathBuf, Error> {
 	let includes = vec![
-		"use protocols::{Data, RpcData};".to_string(),
+		//"use protocols::{Data};".to_string(),
 		"//__SCHEMA_URL__".to_string()
 	];
 
-	build_rust_code_from_protobuffer_with_options(proto_filename, includes,
-		Box::new(|rpc, writer| generate_rpc_traits_and_handler(rpc, writer)))
+	build_rust_code_from_protobuffer_with_options(proto_filename, includes, Box::new(|_, _| Ok(()) ))
 }
 
 /// Call protoc on protobuffer and create non-rpc code
@@ -131,7 +33,7 @@ pub fn build_rust_code_from_protobuffer_with_options(proto_filename: &PathBuf, i
         error_cycle: false,
         headers: true,
 		dont_use_cow: true,
-        custom_struct_derive: vec!["derive_new::new".into()],
+        custom_struct_derive: vec!["derive_new::new".into()], //, "Eq".into(), "Hash".into()],
         custom_rpc_generator: rpc_generator,
 		custom_includes: includes,
     };
@@ -272,7 +174,7 @@ fn get_schema_urls_rs_path() -> PathBuf {
 	schema_urls_rs
 }
 
-pub fn file_missing_text(path: &PathBuf, text: &str) -> Result<bool, Error> {
+pub fn is_file_missing_text(path: &PathBuf, text: &str) -> Result<bool, Error> {
 	log::debug!("Loading file: {:?} and testing for {:?}", path, text);
 	let file_data = ::std::fs::read_to_string(path)?;
 	Ok(!file_data.contains(text))

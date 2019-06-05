@@ -1,91 +1,72 @@
 syntax = "proto2";
 
 // This Schema represents how data will be sent to and from all foreign interfaces.
-//  It will allow personal modules to be sent to dynamic libraries, wasm, and locally
-//  Please NOTE: This is an INSECURE method of transport. All destinations for these messages should be FULLY TRUSTED!
+//  It will allow data to be sent to dynamic libraries, wasm, and locally
 
-message SchemaIdentifier {
-    required string val = 1;
+message TypeDescriptor {
+    required string libraryAlias = 1;  // alias for the Ipfs hash or url of a protobuf file
+    required string structure = 2; // the actual structure name used to deserialize the data
 }
 
-message PeerIdentifier {
-    required string val = 1;
+message TransportError { required string val = 1; }
+
+message ModuleId { required string val = 1; }
+
+message DataChanges {
+    required Id id = 1; // The parent model id
+    required bytes serializedData = 2; // The actual data
+    repeated string dirtyProperties = 3; // The properties that need updating
+    
+    // If we (as a model) change, we pass ourselves here, and our parent into modelId when returning.
+    optional Id subModelId = 4;
+
+    // If the object is not yet created, this will let us know how to create it.
+    required TypeDescriptor descriptor = 5;
+    
+    // Keep track of who triggered this change all the way through. This will allow us to check for circular changes.
+    //repeated Id triggerStack = 6; // TODO: Implement this feature!
 }
 
-message Sender {
-    required string ipns_layer = 1;
-    required PeerIdentifier ipns_sender = 2;
+message Id {
+    required string id = 1;
 }
 
-message Error { required string val = 1; }
+message VecId { repeated Id vec = 1; }
+message VecDataChanges { repeated DataChanges vec = 1; }
 
-// Include data and the schema that can deserialize it.
-message Data {
-    required SchemaIdentifier schema = 1;
-    required bytes serialized_data = 2;
-    optional Sender sender = 3;
+message Empty {}
+
+enum RequestFunctionType {
+    CONSTRUCTOR = 1;
+    DESTRUCTOR = 2;
+    UPDATE_DATA = 3;
+    PROCESS = 4;
 }
 
-// Include the method name and the serialized RPC data.
-message RpcData {
-    // name, data, and deserializer are the three things we need as a destination for RpcData
-    required string method_name = 1;
-    required bytes serialized_rpc_arg = 2;
-    required SchemaIdentifier schema = 3;
-
-    // The RpcData may hold all children and where to send that data. 
-    // If we return to the caller function, we need to identify it.
-    optional RpcData next_path = 4;
-    optional Sender sender = 5;
-}
-
-message ModuleInfo {
-    required SchemaIdentifier schema = 1;
-    required string name = 2;
-}
-
-// Special case for functions that would normally take Destination
-message Destination {
-    required SchemaIdentifier schema = 1;
-}
-
-message VecData { repeated Data vec = 1; }
-message VecModuleInfo { repeated ModuleInfo vec = 1; }
-message VecRpcData { repeated RpcData vec = 1; }
-
-enum RequestType {
-    GET_INFO = 1;
-    RECEIVE_RPC_AS_CLIENT = 2;
-    RECEIVE_RPC_AS_SERVER = 3;
-    RECEIVE_PUBLIC_RPC = 4;
-}
-
-
-// Because we don't support generics - have a oneof for each result. The calling function should know which one it is expecting.
-message DataType {
-    oneof result {
-        Error error = 1;
-        Data data = 2;
-        VecModuleInfo vecmoduleinfo = 3;
-        RpcData rpcdata = 4;
-        Destination destination = 5;
-        VecData vecdata= 6;
-        VecRpcData vecrpcdata = 7;
+message RequestData {
+    oneof data {
+        DataChanges datachanges = 1;
+        Id id = 2;
     }
 }
 
-// Any module that wants to communicate to another module in it's tree must send and receive "Transports"
-message Transport {
-    optional SchemaIdentifier destination = 1; // None is send to ALL!
-    required DataType payload = 2;
-    required RequestType request_type = 3;
+message ReturnData {
+    oneof data {
+        TransportError error = 1;
+        Empty empty = 2;
+        VecDataChanges vecdatachanges = 3;
+        VecId submodelids = 4;
+        DataChanges datachanges = 5;
+    }
 }
 
-message VecTransport { repeated Transport vec = 1; }
+message ReturnTransport {
+    repeated ReturnData vec = 1;
+}
 
-service CommonModule {
-    rpc get_info(Destination) returns (VecModuleInfo);
-    rpc receive_rpc_as_client(RpcData) returns (VecRpcData);
-    rpc receive_rpc_as_server(RpcData) returns (VecRpcData);
-    rpc receive_public_rpc(RpcData) returns (VecRpcData);
+// This message is the actual message that will be sent to/from any interfaces
+message RequestTransport {
+    required ModuleId moduleId = 1;  // This will populate using the TypeDescriptor so we know the module receiving this.
+    required RequestData payload = 2;
+    required RequestFunctionType requestFunctionType = 3;
 }

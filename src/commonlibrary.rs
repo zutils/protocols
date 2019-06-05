@@ -1,36 +1,36 @@
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
-
+use crate::autogen_protobuf::transport::*;
 use failure::Error;
-use crate::Transport;
+use hashbrown::HashMap;
 
 pub trait CommonFFI {
-    fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<Transport>, Error>;
+    fn call_ffi_handle_request(&self, request: &RequestTransport) -> Result<ReturnTransport, Error>;
     fn call_ffi_init(&self) -> Result<(), Error>;
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 impl CommonFFI for libloading::Library {
     // TODO: Handle c-style ffi
-    fn call_ffi_propagate(&self, transport: &Transport) -> Result<Vec<crate::Transport>, Error> {
-        log::trace!("Calling FFI function 'propagate_ffi(...)'...");
+    fn call_ffi_handle_request(&self, request: &RequestTransport) -> Result<ReturnTransport, Error> {
+        log::trace!("Calling FFI function 'ffi_handle_request(...)'...");
 
-        let bytes = quick_protobuf::serialize_into_vec(transport)?;
+        let bytes = quick_protobuf::serialize_into_vec(request)?;
 
         let from_ffi = unsafe {
-            let propagate: libloading::Symbol<unsafe extern fn(&[u8]) -> Vec<u8>> = self.get(b"propagate_ffi")?;
-            propagate(&bytes)
+            let handle_request: libloading::Symbol<unsafe extern fn(&[u8]) -> Vec<u8>> = self.get(b"ffi_handle_request")?;
+            handle_request(&bytes)
         };
 
-        let ret: crate::VecTransport = quick_protobuf::deserialize_from_slice(&from_ffi)?;
+        let ret: crate::ReturnTransport = quick_protobuf::deserialize_from_slice(&from_ffi)?;
         log::trace!("...Received from FFI: {:?}", ret);
-        Ok(ret.vec)
+        Ok(ret)
     }
 
     fn call_ffi_init(&self) -> Result<(), Error> {
-        log::debug!("Calling FFI function 'init()'...");
+        log::debug!("Calling FFI function 'ffi_init()'...");
         unsafe {
-            let init: libloading::Symbol<unsafe extern fn()> = self.get(b"init")?;
+            let init: libloading::Symbol<unsafe extern fn()> = self.get(b"ffi_init")?;
             init();
         }
         log::debug!("...init() successful!");
@@ -83,16 +83,16 @@ pub trait PluginLoader {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl PluginLoader for Vec<Box<CommonFFI>> {
+impl PluginLoader for HashMap<ModuleId, Box<CommonFFI>> {
     fn load_and_cache_dll(&mut self, path: &PathBuf) -> Result<(), Error> {
         let plugin = self.load_dll(path)?;
-        self.push(plugin);
+        self.insert(ModuleId::new(path.to_str().unwrap().into()), plugin);
         Ok(())
     }
 
     fn load_and_cache_webasm(&mut self, path: &PathBuf) -> Result<(), Error> {
         let plugin = self.load_webasm(path)?;
-        self.push(plugin);
+        self.insert(ModuleId::new(path.to_str().unwrap().into()), plugin);
         Ok(())
     }
 }

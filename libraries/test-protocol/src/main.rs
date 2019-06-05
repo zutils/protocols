@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use protocols::propagator::TransportNode;
+use protocols::Transporter::TransportNode;
 
 pub mod autogen_protobuf;
 pub mod test_interface;
@@ -30,13 +30,13 @@ pub extern fn init() {
 
 #[cfg(not(target_arch = "wasm32"))] 
 #[no_mangle]
-/// Messages are sent through a single "propagate_ffi" function as bytes. 
-/// These bytes represent a Transport structure upon receive, and a VecTransport structure upon return.
-pub extern fn propagate_ffi(data: &[u8]) -> Vec<u8> {
-    println!("propagate_ffi");
-    log::trace!("Inside dynamic library propagate_ffi(...)...");
+/// Messages are sent through a single "handle_request_ffi" function as bytes. 
+/// These bytes represent a RequestTransport structure upon receive, and a ReturnTransport structure upon return.
+pub extern fn handle_request_ffi(data: &[u8]) -> Vec<u8> {
+    println!("handle_request_ffi");
+    log::trace!("Inside dynamic library handle_request_ffi(...)...");
     let ret = protocols::pluginhandler::ffi_handle_received_bytes(&NODE, data);
-    log::trace!("...Leaving dynamic library propagate_ffi(...)");
+    log::trace!("...Leaving dynamic library handle_request_ffi(...)");
     ret
 }
 
@@ -52,12 +52,12 @@ extern "C" {
 
 #[cfg(target_arch = "wasm32")] 
 #[no_mangle]
-/// Messages are sent through a single "propagate_ffi" function as bytes. 
-/// These bytes represent a Transport structure upon receive, and a VecTransport structure upon return.
-pub extern fn propagate_ffi_wasm(id: i32, arg_bytesize: i32) -> i32 {
-    println!("propagate_ffi_wasm");
-    println!("Inside dynamic library propagate_ffi(...)...");
-    log::trace!("Inside dynamic library propagate_ffi(...)...");
+/// Messages are sent through a single "handle_request_ffi" function as bytes. 
+/// These bytes represent a RequestTransport structure upon receive, and a ReturnTransport structure upon return.
+pub extern fn handle_request_ffi_wasm(id: i32, arg_bytesize: i32) -> i32 {
+    println!("handle_request_ffi_wasm");
+    println!("Inside dynamic library handle_request_ffi(...)...");
+    log::trace!("Inside dynamic library handle_request_ffi(...)...");
     let arg_data = Vec::with_capacity(arg_bytesize as usize);
     unsafe { test(); }
     unsafe { get_arg_data(arg_data.as_ptr(), arg_bytesize as usize, id); }
@@ -65,7 +65,7 @@ pub extern fn propagate_ffi_wasm(id: i32, arg_bytesize: i32) -> i32 {
     log::trace!("Got arg {:?}", arg_data);
     let ret = protocols::pluginhandler::ffi_handle_received_bytes(&NODE, &arg_data);
     unsafe { return_data(ret.as_ptr(), ret.len(), id); }
-    println!("...Leaving dynamic library propagate_ffi(...)");
-    log::trace!("...Leaving dynamic library propagate_ffi(...)");
+    println!("...Leaving dynamic library handle_request_ffi(...)");
+    log::trace!("...Leaving dynamic library handle_request_ffi(...)");
     return id;
 }

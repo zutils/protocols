@@ -1,107 +1,84 @@
 //! Payload functions offer serializers and deserializers for common Transport payloads
 #![allow(non_snake_case)]
 
-use crate::autogen_protobuf::transport::Error as TError;
-use crate::{Transport, Data, RpcData, ModuleInfo, VecModuleInfo, VecData, VecRpcData};
-use crate::autogen_protobuf::transport::{mod_DataType, DataType};
-
+use crate::autogen_protobuf::transport::*;
 use failure::Error;
 use std::convert::TryInto;
 
 pub struct TransportResponse;
 impl TransportResponse {
-    pub fn create_Transport_result(data: mod_DataType::OneOfresult) -> Transport {       
-        Transport {
-            payload: DataType::new(data),
-            ..Default::default()
-        }
+    pub fn create(data: mod_ReturnData::OneOfdata) -> ReturnTransport {       
+        ReturnTransport::new(vec![ReturnData::new(data)])
     }
 
-    pub fn create_Error(e: &str) -> Transport {
-        let err = TError::new(e.to_string()); 
-        TransportResponse::create_Transport_result(mod_DataType::OneOfresult::error(err))
+    pub fn create_TransportError(e: &str) -> ReturnTransport {
+        let err = TransportError::new(e.to_string()); 
+        TransportResponse::create(err.into())
     }
 }
 
-/// Returning transports can be poisoned via wasm unsafe code and can be a security risk if not handled properly!!!
-fn filter_some_and_print_errors(results: Vec<Transport>) -> Vec<mod_DataType::OneOfresult> {
-    results.into_iter()
-        .filter_map(|transport| match transport.payload.result {
-            mod_DataType::OneOfresult::error(e) => { log::debug!("{:?}", e.val); None },
+// Returning transports can be poisoned via wasm unsafe code and can be a security risk if not handled properly!!!
+fn filter_some_and_print_errors(ret: ReturnTransport) -> Vec<mod_ReturnData::OneOfdata> {
+    ret.vec.into_iter()
+        .filter_map(|data| match data.data {
+            mod_ReturnData::OneOfdata::error(e) => { log::debug!("{:?}", e.val); None },
             res => Some(res),
         }).collect()       
 }
 
-impl TryInto<VecModuleInfo> for Vec<Transport> {
+impl TryInto<VecId> for ReturnTransport {
     type Error = Error;
-    fn try_into(self) -> Result<VecModuleInfo, Self::Error> {
+    fn try_into(self) -> Result<VecId, Self::Error> {
         let results = filter_some_and_print_errors(self);
 
-        let infos: Vec<ModuleInfo> = results.into_iter()
+        let data: Vec<Id> = results.into_iter()
             .filter_map(|result| match result { 
-                mod_DataType::OneOfresult::vecmoduleinfo(p) => Some(p.vec), 
+                mod_ReturnData::OneOfdata::submodelids(p) => Some(p.vec), 
                 _ => None, 
             })
             .flatten().collect();
         
-        Ok(VecModuleInfo::new(infos))
+        Ok(VecId::new(data))
     }
 }
 
-impl TryInto<Data> for Vec<Transport> {
+
+impl TryInto<VecDataChanges> for ReturnTransport {
     type Error = Error;
-    fn try_into(self) -> Result<Data, Self::Error> {
+    fn try_into(self) -> Result<VecDataChanges, Self::Error> {
         let results = filter_some_and_print_errors(self);
 
-        let mut infos: Vec<Data> = results.into_iter()
+        let data: Vec<DataChanges> = results.into_iter()
             .filter_map(|result| match result { 
-                mod_DataType::OneOfresult::data(p) => Some(p), 
+                mod_ReturnData::OneOfdata::VecDataChanges(p) => Some(p.vec), 
+                _ => None, 
+            })
+            .flatten().collect();
+        
+        Ok(VecDataChanges::new(data))
+    }
+}
+
+impl TryInto<DataChanges> for ReturnTransport {
+    type Error = Error;
+    fn try_into(self) -> Result<DataChanges, Self::Error> {
+        let results = filter_some_and_print_errors(self);
+
+        let data: Vec<DataChanges> = results.into_iter()
+            .filter_map(|result| match result { 
+                mod_ReturnData::OneOfdata::datachanges(p) => Some(p), 
                 _ => None, 
             })
             .collect();
 
-        if infos.len() > 1 {
-            log::debug!("combine_to_Data(...) has more than one result! Returning first one.")
-        } 
+        if data.len() > 1 {
+            return Err(failure::format_err!("Warning! Multiple responses. Expecting only one!"));
+        }
 
-        Ok(infos.pop().ok_or(failure::format_err!("No response for data request!"))?)
-    }
-}
-
-impl TryInto<VecData> for Vec<Transport> {
-    type Error = Error;
-    fn try_into(self) -> Result<VecData, Self::Error> {
-        let results = filter_some_and_print_errors(self);
-
-        let infos: Vec<Data> = results.into_iter()
-            .filter_map(|result| match result { 
-                mod_DataType::OneOfresult::vecdata(p) => Some(p.vec), 
-                _ => None, 
-            })
-            .flatten().collect();
+        if data.len() == 0 {
+            return Err(failure::format_err!("Warning! Expecting DataChanges!"));
+        }
         
-        Ok(VecData::new(infos))
-    }
-}
-
-impl TryInto<VecRpcData> for Vec<Transport> {
-    type Error = Error;
-    fn try_into(self) -> Result<VecRpcData, Self::Error> {
-        let results = filter_some_and_print_errors(self);
-
-        let infos: Vec<RpcData> = results.into_iter()
-            .filter_map(|result| match result { 
-                mod_DataType::OneOfresult::vecrpcdata(p) => Some(p.vec), 
-                _ => None, 
-            })
-            .flatten().collect();
-        
-        Ok(VecRpcData::new(infos))
-    }
-}
-
-impl From<Vec<RpcData>> for VecRpcData {
-    fn from(f: Vec<RpcData>) -> Self {
-        VecRpcData::new(f)
+        Ok(data.first().unwrap().clone()) // We can unwrap because we already checked the length above.
     }
 }
