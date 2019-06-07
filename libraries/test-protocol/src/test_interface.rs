@@ -1,7 +1,6 @@
-use crate::autogen::test;
-use crate::autogen::schema_urls;
+use crate::autogen_protobuf::test;
 
-use protocols::{CommonModule, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
+use protocols::{CommonModelFunctions, ModuleInfo, VecModuleInfo, Destination, VecRpcData, RpcData};
 
 struct ClientRPCHandler;
 struct ServerRPCHandler;
@@ -11,9 +10,9 @@ impl test::ServerRPC for ServerRPCHandler {}
 impl test::PublicRPC for PublicRPCHandler {}
 
 pub struct Interface;
-impl CommonModule for Interface {
+impl CommonModelFunctions for Interface {
     fn get_info(&self, _: &Destination) -> Result<VecModuleInfo, failure::Error> {
-        let info = ModuleInfo::new(schema_urls::SCHEMA_URL_TEST.into(), "test".to_string());
+        let info = ModuleInfo::new(test::SCHEMA_URL.into(), "test".to_string());
         Ok(VecModuleInfo::new(vec![info]))
     }
 
@@ -29,10 +28,10 @@ impl CommonModule for Interface {
         test::handle_PublicRPC(data, PublicRPCHandler{})
     }
 }
-//protocols::implCommonModule!(test, SCHEMA_URL);
+//protocols::implCommonModelFunctions!(test, SCHEMA_URL);
 
 impl test::ClientRPC for ClientRPCHandler {
-    fn receive_test(&self, data: test::Test) -> Result<Vec<RpcData>, failure::Error> {
+    fn send_test(&self, data: test::Test) -> Result<Vec<RpcData>, failure::Error> {
         log::info!("Recieved test data {:?}.", data);
         log::info!(r#"Testing to see if name is "Test Name" and data is "Test Data"#);
         if data.name != "Test Name" || data.data != "Test Data" {
@@ -44,46 +43,50 @@ impl test::ClientRPC for ClientRPCHandler {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+    use std::path::PathBuf;
+
     #[test]
-    fn test_send_receive() {
-        if let Err(e) = protocols::logging::initialize_standard_logging("") {
-            panic!("Error: {:?}", e);
+    fn test_send_receive_wasm() {
+        if let Err(e) = test_send_receive(&PathBuf::from("./target/wasm32-unknown-wasi/release/test-protocol.wasm")) {
+            panic!("{:?}", e);
         }
-
-        let rpc_send_data = get_send_data();
-        if let Err(e) = rpc_send_data {
-            panic!("Error: {:?}", e);
-        }
-        if let Err(e) = receive(&rpc_send_data.unwrap()) {
-            panic!("Error: {:?}", e);
-        }
+        println!("test_send_receive_wasm test passed!");
     }
 
-    fn get_send_data() -> Result<Vec<u8>, failure::Error> {
-        use super::*;
+    /*#[test]
+    fn test_send_receive_dll() -> Result<(), failure::Error> {
+        test_send_receive(&PathBuf::from("./target/debug/deps/test-protocol.dll"))?;
+        Ok(())
+    }*/
 
+    fn test_send_receive(plugin_filename: &PathBuf) -> Result<(), failure::Error> {
+        use crate::autogen_protobuf::test::ClientRPC; // For send_test()
+        protocols::logging::initialize_standard_logging("")?;
+
+        // We need Sync and Send memory for send_test(...)
+        let data = Arc::new(Mutex::new(protocols::RpcData::default()));
+        let data_clone = data.clone();
+
+        // In our case, we do not transmit, we just write to some data.
+        let transmit_rpc_function = move |rpc| { *data_clone.lock().unwrap() = rpc; Ok(())};
+        let client = test::SendClientRPC { func: Box::new(transmit_rpc_function) };
         let test_data = test::Test::new("Test Name".to_string(), "Test Data".to_string());
-        
-        let rpc = protocols::RpcData {
-            method_name: "ClientRPC/receive_test".to_string(),
-            schema: schema_urls::SCHEMA_URL_TEST.into(),
-            serialized_rpc_arg: quick_protobuf::serialize_into_vec(&test_data)?,
-            ..Default::default()
-        };
+        client.send_test(test_data)?; 
 
-        log::info!("Serializing RpcData: {:?}", rpc);
-
-        let send_data = quick_protobuf::serialize_into_vec(&rpc)?;
-        Ok(send_data)
+        let data = data.lock().unwrap().clone();
+        let bytes = quick_protobuf::serialize_into_vec(&data)?;
+        receive_plugin(plugin_filename, &bytes)?;
+        Ok(())
     }
 
-    fn receive(data: &[u8]) -> Result<(), failure::Error> {
-        use std::path::PathBuf;
-        use protocols::{ModuleToTransportGlue, DynamicLibraryLoader};
+    fn receive_plugin(plugin_filename: &PathBuf, data: &[u8]) -> Result<(), failure::Error> {
+        //use protocols::{ModelFunctionToTransportGlue};
 
         // Initialize plugin handler. The PluginHandler is ALSO our module root.
-        let handler = protocols::PluginHandler::new();
-        handler.load_plugin(&PathBuf::from("./target/debug/deps/test_protocol.dll"))?;
+        let mut handler = protocols::PluginHandler::new();
+        handler.load_and_cache_plugin(plugin_filename)?;
         
         // Convert received bytes to a Data type.
         let data: protocols::RpcData = quick_protobuf::deserialize_from_slice(&data)?; 
