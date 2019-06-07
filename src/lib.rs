@@ -40,23 +40,28 @@
 //! plugins = "*"
 //! ```
 
-#![feature(try_from)]
+#![feature(as_cell)]
 
-pub mod pluginhandler;
-pub mod buildfunctions;
-pub mod propagator;
-pub mod autogen;
-pub mod transportresponse;
+pub mod transporter;
+pub mod autogen_protobuf;
 pub mod common;
-pub mod utils;
+pub mod hashenabler;
 pub mod logging;
 pub mod transport_glue;
-pub mod rpcmacro;
+pub mod commonlibrary;
+pub mod pluginhandler;
 
-pub use crate::pluginhandler::{PluginHandler, DynamicLibraryLoader};
-pub use crate::transportresponse::TransportResponse;
-pub use crate::transport_glue::{TransportToModuleGlue, ModuleToTransportGlue};
-pub use crate::common::CommonModule;
-pub use crate::autogen::transport::{Transport, Sender, VecTransport, SchemaIdentifier, ModuleInfo, 
-                Destination, RpcData, VecModuleInfo, VecData, Data, VecRpcData, PeerIdentifier};
+#[cfg(not(target_arch = "wasm32"))]
+pub mod wasmhandler;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod buildfunctions;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::pluginhandler::{PluginHandler};
+
+pub use crate::transporter::{Transporter, RootTransporter};
+pub use crate::transport_glue::{TransportToModelGlue, TransportToProcessorGlue};
+pub use crate::common::{CommonModelFunctions, CommonStructureFunctions, Modifiable};
+pub use crate::autogen_protobuf::transport::*;
 

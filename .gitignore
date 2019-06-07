@@ -5,6 +5,6 @@ example/target
 Cargo.lock
 .vscode/
 
-/libraries/*/src/autogen/*
-/example/src/autogen/*
-/src/autogen/*
+/libraries/*/src/autogen_*/*
+/example/src/autogen_*/*
+/src/autogen_*/*
